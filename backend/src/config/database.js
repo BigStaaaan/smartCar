@@ -2,7 +2,7 @@ const { Sequelize } = require('sequelize');
 const environment = require('./environment');
 
 const sequelize = new Sequelize(environment.databaseUrl, {
-  dialect: 'postgres',
+  dialect: 'mysql',
   logging: environment.nodeEnv === 'development' ? console.log : false,
 });
 

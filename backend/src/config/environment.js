@@ -3,7 +3,7 @@ require('dotenv').config();
 module.exports = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 3000),
-  databaseUrl: process.env.DATABASE_URL,
+  databaseUrl: process.env.MYSQL_URL || process.env.DATABASE_URL,
   clientOrigin: process.env.CLIENT_ORIGIN || '*',
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID,
