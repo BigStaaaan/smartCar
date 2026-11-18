@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smartcar/app/app.dart';
 import 'package:smartcar/features/authentication/presentation/pages/login_page.dart';
+import 'package:smartcar/features/authentication/presentation/pages/register_page.dart';
 
 void main() {
-  testWidgets('SmartCar welcome screen navigates to LoginPage on Get Started tap',
+  testWidgets(
+      'SmartCar welcome screen navigates to LoginPage on Get Started tap',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(390 * 3, 844 * 3);
     tester.view.devicePixelRatio = 3.0;
@@ -61,7 +63,10 @@ void main() {
     await tester.tap(find.text('Log In'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Please use your verified .edu campus email'), findsOneWidget);
+    expect(
+      find.text('Only edu.uiz.ac.ma or uiz.ac.ma are accepted'),
+      findsOneWidget,
+    );
 
     // Toggle password visibility
     expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
@@ -92,5 +97,28 @@ void main() {
 
     expect(find.text('Welcome back!'), findsOneWidget);
     expect(find.text('Log In'), findsOneWidget);
+  });
+
+  testWidgets('Create one opens the signup screen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: LoginPage()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.tap(find.text('Create one'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RegisterPage), findsOneWidget);
+    expect(find.text('SmartCar'), findsOneWidget);
+    expect(find.text('Student'), findsOneWidget);
+    expect(find.text('Staff'), findsOneWidget);
+    expect(find.text('Create Student Account'), findsOneWidget);
   });
 }

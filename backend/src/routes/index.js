@@ -2,5 +2,6 @@ const express = require('express');
 
 const router = express.Router();
 router.get('/health', (req, res) => res.json({ status: 'ok', service: 'smartcar-api' }));
+router.use('/auth', require('./authentication/authentication.routes'));
 
 module.exports = router;

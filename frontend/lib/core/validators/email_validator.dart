@@ -3,7 +3,13 @@ class EmailValidator {
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
 
-  static String? validate(String? value) {
+  static String? validateStudent(String? value) =>
+      validate(value, accountType: 'STUDENT');
+
+  static String? validateStaff(String? value) =>
+      validate(value, accountType: 'STAFF');
+
+  static String? validate(String? value, {String? accountType}) {
     if (value == null || value.trim().isEmpty) {
       return 'Please enter your campus email';
     }
@@ -14,16 +20,25 @@ class EmailValidator {
       return 'Please enter a valid email address';
     }
 
-    // Must be a university email (.edu, .ac.ma, or university domain)
-    final isEdu = trimmed.endsWith('.edu') ||
-        trimmed.contains('.edu.') ||
-        trimmed.endsWith('.ac.ma') ||
-        trimmed.contains('uiz.ac.ma');
-
-    if (!isEdu) {
-      return 'Please use your verified .edu campus email';
+    final atIndex = trimmed.lastIndexOf('@');
+    if (atIndex == -1) {
+      return 'Please use your university email';
     }
+    final domain = trimmed.substring(atIndex + 1);
+    final derivedType = domain == 'edu.uiz.ac.ma'
+        ? 'STUDENT'
+        : domain == 'uiz.ac.ma'
+            ? 'STAFF'
+            : null;
 
+    if (derivedType == null) {
+      return 'Only edu.uiz.ac.ma or uiz.ac.ma are accepted';
+    }
+    if (accountType != null && accountType != derivedType) {
+      return accountType == 'STUDENT'
+          ? 'Student accounts require the edu.uiz.ac.ma domain'
+          : 'Staff accounts require the uiz.ac.ma domain';
+    }
     return null;
   }
 }

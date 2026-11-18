@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/auth_user.dart';
+import '../../../../core/services/firebase_auth_service.dart';
 
 class AuthState {
   final bool isLoading;
@@ -30,7 +33,19 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState());
+  AuthNotifier()
+      : _firebaseAuth = FirebaseAuthService(),
+        _dio = Dio(BaseOptions(
+          baseUrl: const String.fromEnvironment(
+            'API_BASE_URL',
+            defaultValue: 'http://10.0.2.2:3000/api/v1',
+          ),
+          headers: {'Content-Type': 'application/json'},
+        )),
+        super(const AuthState());
+
+  final FirebaseAuthService _firebaseAuth;
+  final Dio _dio;
 
   void setRememberMe(bool value) {
     state = state.copyWith(rememberMe: value);
@@ -47,19 +62,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      // Simulate/perform sign in logic
-      await Future<void>.delayed(const Duration(milliseconds: 900));
-
-      final user = AuthUser(
-        id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
+      final credential = await _firebaseAuth.signIn(
         email: email,
-        displayName: email.split('@').first,
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) throw Exception('Firebase user unavailable');
+      if (!user.emailVerified) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Verify your university email before continuing.',
+        );
+        return false;
+      }
+
+      final idToken = await _firebaseAuth.getIdToken(forceRefresh: true);
+      if (idToken == null) throw Exception('Authentication token unavailable');
+      await _dio.get(
+        '/auth/me',
+        options: Options(headers: {'Authorization': 'Bearer $idToken'}),
+      );
+
+      final authUser = AuthUser(
+        id: user.uid,
+        email: user.email ?? email,
+        displayName: user.displayName,
         isVerifiedStudent: true,
       );
 
       state = state.copyWith(
         isLoading: false,
-        user: user,
+        user: authUser,
       );
       return true;
     } catch (e) {
@@ -75,18 +108,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 900));
+      final credential = await _firebaseAuth.signInWithGoogle();
+      final user = credential.user;
+      if (user == null) throw Exception('Firebase user unavailable');
+      if (!user.emailVerified) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Your Google university email must be verified.',
+        );
+        return false;
+      }
 
-      final user = AuthUser(
-        id: 'g_${DateTime.now().millisecondsSinceEpoch}',
-        email: 'student@university.edu',
-        displayName: 'Campus Student',
+      final idToken = await _firebaseAuth.getIdToken(forceRefresh: true);
+      if (idToken == null) throw Exception('Authentication token unavailable');
+      await _dio.post(
+        '/auth/google',
+        options: Options(headers: {'Authorization': 'Bearer $idToken'}),
+      );
+
+      final authUser = AuthUser(
+        id: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName,
         isVerifiedStudent: true,
       );
 
       state = state.copyWith(
         isLoading: false,
-        user: user,
+        user: authUser,
       );
       return true;
     } catch (e) {
@@ -98,9 +147,62 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> signUpWithEmail({
+    required String fullName,
+    required String university,
+    required String email,
+    required String password,
+    required String accountType,
+    bool isDriver = false,
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    try {
+      final credential = await _firebaseAuth.createUniversityAccount(
+        email: email,
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) throw Exception('Firebase user unavailable');
+      await user.updateDisplayName(fullName);
+      await user.reload();
+
+      final idToken = await _firebaseAuth.getIdToken(forceRefresh: true);
+      if (idToken == null) throw Exception('Authentication token unavailable');
+      await _dio.post(
+        '/auth/register',
+        data: {
+          'fullName': fullName,
+          'university': university,
+          'accountType': accountType,
+        },
+        options: Options(headers: {'Authorization': 'Bearer $idToken'}),
+      );
+
+      final authUser = AuthUser(
+        id: user.uid,
+        email: user.email ?? email,
+        displayName: fullName,
+        isVerifiedStudent: true,
+      );
+
+      state = state.copyWith(
+        isLoading: false,
+        user: authUser,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
+      return false;
+    }
+  }
+
   Future<bool> sendPasswordReset(String email) async {
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await _firebaseAuth.sendPasswordReset(email);
       return true;
     } catch (e) {
       return false;

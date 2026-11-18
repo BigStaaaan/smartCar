@@ -42,6 +42,12 @@
 @import google_mlkit_text_recognition;
 #endif
 
+#if __has_include(<google_sign_in_ios/GoogleSignInPlugin.h>)
+#import <google_sign_in_ios/GoogleSignInPlugin.h>
+#else
+@import google_sign_in_ios;
+#endif
+
 #if __has_include(<image_picker_ios/ImagePickerPlugin.h>)
 #import <image_picker_ios/ImagePickerPlugin.h>
 #else
@@ -63,6 +69,7 @@
   [FGMGoogleMapsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FGMGoogleMapsPlugin"]];
   [GoogleMlKitCommonsPlugin registerWithRegistrar:[registry registrarForPlugin:@"GoogleMlKitCommonsPlugin"]];
   [GoogleMlKitTextRecognitionPlugin registerWithRegistrar:[registry registrarForPlugin:@"GoogleMlKitTextRecognitionPlugin"]];
+  [GoogleSignInPlugin registerWithRegistrar:[registry registrarForPlugin:@"GoogleSignInPlugin"]];
   [ImagePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"ImagePickerPlugin"]];
   [IntegrationTestPlugin registerWithRegistrar:[registry registrarForPlugin:@"IntegrationTestPlugin"]];
 }

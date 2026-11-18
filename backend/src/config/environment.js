@@ -5,6 +5,9 @@ module.exports = {
   port: Number(process.env.PORT || 3000),
   databaseUrl: process.env.MYSQL_URL || process.env.DATABASE_URL,
   clientOrigin: process.env.CLIENT_ORIGIN || '*',
+  universityName: process.env.UNIVERSITY_NAME || 'Universite Ibn Zohr',
+  studentEmailDomain: process.env.STUDENT_EMAIL_DOMAIN || 'edu.uiz.ac.ma',
+  staffEmailDomain: process.env.STAFF_EMAIL_DOMAIN || 'uiz.ac.ma',
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
