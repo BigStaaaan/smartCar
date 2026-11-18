@@ -38,7 +38,7 @@ async function me(req, res) {
 }
 
 async function verificationStatus(req, res) {
-  const user = await authenticationService.getProfile(req.user);
+  const user = await authenticationService.markEmailVerified(req.user);
   return res.json({
     emailVerified: req.user.email_verified === true,
     universityVerified: user?.universityVerified === true,

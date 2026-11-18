@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
@@ -37,6 +38,22 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       await FirebaseAuth.instance.currentUser?.reload();
       final user = FirebaseAuth.instance.currentUser;
       if (user?.emailVerified == true) {
+        final idToken = await user?.getIdToken(true);
+        if (idToken != null) {
+          await Dio(
+            BaseOptions(
+              baseUrl: const String.fromEnvironment(
+                'API_BASE_URL',
+                defaultValue: 'http://10.0.2.2:3000/api/v1',
+              ),
+            ),
+          ).get(
+            '/auth/verification-status',
+            options: Options(
+              headers: {'Authorization': 'Bearer $idToken'},
+            ),
+          );
+        }
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(builder: (_) => const HomePage()),

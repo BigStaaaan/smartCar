@@ -94,8 +94,17 @@ function getProfile(decodedToken) {
   return User.findOne({ where: { firebaseUid: decodedToken.uid } });
 }
 
+async function markEmailVerified(decodedToken) {
+  const user = await getProfile(decodedToken);
+  if (user && decodedToken.email_verified === true) {
+    await user.update({ emailVerified: true });
+  }
+  return user;
+}
+
 module.exports = {
   User,
   syncProfile,
   getProfile,
+  markEmailVerified,
 };
