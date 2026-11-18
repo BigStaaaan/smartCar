@@ -73,7 +73,15 @@ class FirebaseAuthService {
   }
 
   Future<void> resendVerificationEmail() async {
-    await _firebaseAuth.currentUser?.sendEmailVerification();
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-current-user',
+        message: 'No signed-in account is available.',
+      );
+    }
+    if (user.emailVerified) return;
+    await user.sendEmailVerification();
   }
 
   Future<void> signOut() async {

@@ -17,17 +17,33 @@ class EmailVerificationPage extends StatefulWidget {
 class _EmailVerificationPageState extends State<EmailVerificationPage> {
   bool _isLoading = false;
   String? _message;
+  DateTime? _lastResendAt;
 
   Future<void> _resend() async {
+    if (_lastResendAt != null &&
+        DateTime.now().difference(_lastResendAt!) <
+            const Duration(seconds: 60)) {
+      setState(
+        () => _message = 'Veuillez attendre avant de demander un nouveau lien.',
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await FirebaseAuth.instance.currentUser?.sendEmailVerification();
+      _lastResendAt = DateTime.now();
       setState(
         () => _message =
             'Lien de verification renvoye sur votre adresse universitaire.',
       );
     } on FirebaseAuthException catch (error) {
-      setState(() => _message = error.message);
+      String message = error.message ?? 'Impossible de renvoyer le lien.';
+      if (error.code == 'too-many-requests') {
+        message =
+            'Trop de demandes. Attendez quelques minutes avant de renvoyer.';
+      }
+      setState(() => _message = message);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -33,7 +33,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDfyZV8hoCUCVnkNYK3kFOs75wWDyYE-xc',
+    apiKey: 'AIzaSyAz7gXLE-36hDpmwCPVJqXm2TkpR3Omc5c',
     appId: '1:624089854276:android:82a05cb4c4a46a6f1fa711',
     messagingSenderId: '624089854276',
     projectId: 'smartcar-290dd',

@@ -234,14 +234,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final responseData = e.response?.data;
         if (responseData is Map && responseData['error'] is String) {
           message = responseData['error'] as String;
-        } else {
+        } else if (e.type == DioExceptionType.connectionError) {
           message =
-              'Unable to reach the backend. Start it with npm start on port 3000.';
+              'Cannot connect to http://127.0.0.1:3000. Start the backend and allow local CORS.';
+        } else if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          message = 'The backend did not respond on port 3000.';
+        } else {
+          message = 'Backend request failed: ${e.message ?? e.type.name}';
         }
       }
-      try {
-        await _firebaseAuth.deleteCurrentAccount();
-      } catch (_) {}
       state = state.copyWith(
         isLoading: false,
         errorMessage: message,
