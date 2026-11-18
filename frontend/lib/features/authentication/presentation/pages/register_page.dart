@@ -95,6 +95,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => const HomePage()),
       );
+    } else {
+      final message =
+          ref.read(authProvider).errorMessage ?? 'Google Sign-In failed.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 

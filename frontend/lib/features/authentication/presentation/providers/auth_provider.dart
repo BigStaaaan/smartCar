@@ -151,9 +151,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      String message = 'Google Sign-In was cancelled or failed.';
+      if (e is DioException) {
+        final responseData = e.response?.data;
+        if (responseData is Map && responseData['error'] is String) {
+          message = responseData['error'] as String;
+        } else if (e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.connectionTimeout) {
+          message =
+              'Unable to reach the backend. Start it with npm start on port 3000.';
+        }
+      } else if (e is FirebaseAuthException) {
+        if (e.code == 'popup-closed-by-user') {
+          message = 'Google Sign-In popup was closed.';
+        } else if (e.code == 'unauthorized-domain') {
+          message =
+              'This web domain is not authorized in Firebase Authentication.';
+        } else if (e.message != null && e.message!.isNotEmpty) {
+          message = e.message!;
+        }
+      }
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Google Sign-In was cancelled or failed.',
+        errorMessage: message,
       );
       return false;
     }

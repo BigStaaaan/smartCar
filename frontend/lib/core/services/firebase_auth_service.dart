@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class FirebaseAuthService {
@@ -40,6 +41,14 @@ class FirebaseAuthService {
   }
 
   Future<UserCredential> signInWithGoogle() async {
+    if (kIsWeb) {
+      final googleProvider = GoogleAuthProvider();
+      googleProvider.setCustomParameters({
+        'prompt': 'select_account',
+      });
+      return _firebaseAuth.signInWithPopup(googleProvider);
+    }
+
     await _ensureGoogleInitialized();
     final googleUser = await _googleSignIn.authenticate();
     final googleAuth = googleUser.authentication;
