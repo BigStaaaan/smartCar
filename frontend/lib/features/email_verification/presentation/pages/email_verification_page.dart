@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
@@ -44,7 +45,9 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             BaseOptions(
               baseUrl: const String.fromEnvironment(
                 'API_BASE_URL',
-                defaultValue: 'http://10.0.2.2:3000/api/v1',
+                defaultValue: kIsWeb
+                    ? 'http://127.0.0.1:3000/api/v1'
+                    : 'http://10.0.2.2:3000/api/v1',
               ),
             ),
           ).get(

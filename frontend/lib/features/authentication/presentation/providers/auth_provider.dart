@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/auth_user.dart';
 import '../../../../core/services/firebase_auth_service.dart';
 
@@ -38,7 +39,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         _dio = Dio(BaseOptions(
           baseUrl: const String.fromEnvironment(
             'API_BASE_URL',
-            defaultValue: 'http://10.0.2.2:3000/api/v1',
+            defaultValue: kIsWeb
+                ? 'http://127.0.0.1:3000/api/v1'
+                : 'http://10.0.2.2:3000/api/v1',
           ),
           headers: {'Content-Type': 'application/json'},
         )),
@@ -123,7 +126,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final credential = await _firebaseAuth.signInWithGoogle();
       final user = credential.user;
       if (user == null) throw Exception('Firebase user unavailable');
-      if (!user.emailVerified) {
+      final googleEmailVerified = user.emailVerified ||
+          credential.additionalUserInfo?.providerId == 'google.com';
+      if (!googleEmailVerified) {
         state = state.copyWith(
           isLoading: false,
           errorMessage: 'Your Google university email must be verified.',
