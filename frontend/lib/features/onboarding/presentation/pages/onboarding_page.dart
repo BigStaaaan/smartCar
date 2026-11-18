@@ -1,336 +1,373 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_typography.dart';
+import '../../../authentication/presentation/pages/login_page.dart';
 
-class OnboardingPage extends StatelessWidget {
+class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
   @override
+  State<OnboardingPage> createState() => _OnboardingPageState();
+}
+
+class _OnboardingPageState extends State<OnboardingPage> {
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()..onTap = _showTermsDialog;
+    _privacyRecognizer = TapGestureRecognizer()..onTap = _showPrivacyDialog;
+  }
+
+  @override
+  void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    super.dispose();
+  }
+
+  void _onGetStarted() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => const LoginPage(),
+      ),
+    );
+  }
+
+  void _showTermsDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Terms of Service'),
+        content: const Text(
+          'By using SmartCar, you agree to respect campus carpooling safety rules, '
+          'maintain university student verification, and share ride costs fairly.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const Text(
+          'SmartCar protects your university credentials and student data. '
+          'Your location is only shared during active trip matching.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final topPadding = mediaQuery.padding.top;
+    final bottomPadding = mediaQuery.padding.bottom;
 
     return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final illustrationHeight = (constraints.maxHeight * 0.43).clamp(
-              240.0,
-              360.0,
-            );
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.0, 0.55, 1.0],
+            colors: [
+              Color(0xFFB7ACEB), // Soft lavender / light purple at top
+              Color(0xFFE6E1F8), // Smooth mid-tone transition
+              Color(0xFFF7F5FD), // Very light lavender / almost white at bottom
+            ],
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          bottom: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        topPadding + 14,
+                        20,
+                        bottomPadding + 16,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // ── Top Header: Application Name at top-left ──
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Text(
+                                'SmartCar',
+                                style: AppTypography.headlineSm.copyWith(
+                                  color: const Color(0xFF1B1B20),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.4,
+                                ),
+                              ),
+                            ),
+                          ),
 
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(24, 18, 24, 24 + bottomInset),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 42,
+                          const SizedBox(height: 12),
+
+                          // ── Center Illustration ──
+                          Expanded(
+                            flex: 6,
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 280,
+                                  maxWidth: 280,
+                                ),
+                                child: Image.asset(
+                                  'assets/images/illustrations/welcome-screen-ilustration.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // ── Main Content: Headings & Description ──
+                          // Main Heading (Bricolage Grotesque)
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(text: 'Share the ride,\n'),
+                                TextSpan(
+                                  text: 'split the cost.',
+                                  style: TextStyle(
+                                    color: const Color(0xFF403DEB),
+                                    fontFamily: AppTypography.fontHeadline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                            style: AppTypography.headlineMd.copyWith(
+                              color: const Color(0xFF1B1B20),
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                              height: 1.2,
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          // Description (Be Vietnam Pro)
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 240),
+                            child: Text(
+                              'Find verified students going your way and '
+                              'travel to campus safely and affordably.',
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodySm.copyWith(
+                                color: const Color(0xFF5A5968),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w400,
+                                height: 1.45,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          // ── Onboarding Indicators ──
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Active Indicator (pill)
+                              Container(
+                                width: 22,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF403DEB),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // Inactive Indicator 1
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFC7C5D4),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // Inactive Indicator 2
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFC7C5D4),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // ── Get Started Button ──
+                          _GetStartedButton(onPressed: _onGetStarted),
+
+                          const SizedBox(height: 16),
+
+                          // ── Footer (Be Vietnam Pro) ──
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 220),
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  const TextSpan(
+                                    text: 'By continuing you accept our ',
+                                  ),
+                                  TextSpan(
+                                    text: 'Terms',
+                                    recognizer: _termsRecognizer,
+                                    style: const TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF5A5968),
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' & '),
+                                  TextSpan(
+                                    text: 'Privacy Policy',
+                                    recognizer: _privacyRecognizer,
+                                    style: const TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF5A5968),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                              style: AppTypography.caption.copyWith(
+                                color: const Color(0xFF6B6B7B),
+                                fontSize: 10.5,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET STARTED BUTTON
+// ─────────────────────────────────────────────────────────────────────────────
+class _GetStartedButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _GetStartedButton({required this.onPressed});
+
+  @override
+  State<_GetStartedButton> createState() => _GetStartedButtonState();
+}
+
+class _GetStartedButtonState extends State<_GetStartedButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      widthFactor: 0.92,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFF403DEB),
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33403DEB),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onHighlightChanged: (highlighted) {
+                setState(() {
+                  _isPressed = highlighted;
+                });
+              },
+              onTap: widget.onPressed,
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const _BrandMark(),
-                    const SizedBox(height: 18),
-                    SizedBox(
-                      height: illustrationHeight,
-                      child: const _WelcomeIllustration(),
-                    ),
-                    const SizedBox(height: 22),
-                    const _PageIndicator(),
-                    const SizedBox(height: 26),
                     Text(
-                      'Chaque trajet compte',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontSize: 30,
-                        height: 1.08,
-                        letterSpacing: -1,
+                      'Get Started',
+                      style: AppTypography.labelMd.copyWith(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Partagez vos trajets entre membres de l’UIZ, '
-                      'simplement et en toute confiance.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: AppColors.charcoal.withValues(alpha: 0.7),
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    ElevatedButton(
-                      onPressed: () {},
-                      child: const Text('Commencer'),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 18,
                     ),
                   ],
                 ),
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _BrandMark extends StatelessWidget {
-  const _BrandMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.alt_route_rounded,
-            color: Colors.white,
-            size: 21,
-          ),
-        ),
-        const SizedBox(width: 9),
-        const Text(
-          'SmartCar',
-          style: TextStyle(
-            color: AppColors.charcoal,
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.8,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PageIndicator extends StatelessWidget {
-  const _PageIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 34,
-          height: 6,
-          decoration: const ShapeDecoration(
-            color: AppColors.primary,
-            shape: StadiumBorder(),
-          ),
-        ),
-        const SizedBox(width: 8),
-        ...List.generate(
-          2,
-          (_) => Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Container(
-              width: 25,
-              height: 6,
-              decoration: const ShapeDecoration(
-                color: AppColors.border,
-                shape: StadiumBorder(),
-              ),
             ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _WelcomeIllustration extends StatelessWidget {
-  const _WelcomeIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _WelcomeIllustrationPainter(),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-class _WelcomeIllustrationPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final scale = size.width / 342;
-    canvas.save();
-    canvas.scale(scale, scale);
-    final width = size.width / scale;
-    final height = size.height / scale;
-
-    final parkPaint = Paint()..color = AppColors.illustrationBlue;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(width / 2, height * 0.48),
-        width: 300,
-        height: 210,
       ),
-      parkPaint,
-    );
-
-    final roadPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.82)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    final route = Path()
-      ..moveTo(48, height * 0.62)
-      ..cubicTo(95, height * 0.47, 150, height * 0.72, 198, height * 0.49)
-      ..cubicTo(234, height * 0.32, 262, height * 0.4, 298, height * 0.28);
-    canvas.drawPath(route, roadPaint);
-
-    final routeAccent = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-    final accentRoute = Path()
-      ..moveTo(54, height * 0.6)
-      ..cubicTo(92, height * 0.49, 142, height * 0.66, 184, height * 0.5)
-      ..cubicTo(210, height * 0.4, 230, height * 0.41, 254, height * 0.33);
-    canvas.drawPath(accentRoute, routeAccent);
-
-    _drawTrees(canvas, height);
-    _drawPhone(canvas, height);
-    _drawCar(canvas, height);
-
-    final pinPaint = Paint()..color = AppColors.darkBlue;
-    canvas.drawCircle(Offset(214, height * 0.43), 7, pinPaint);
-    canvas.drawCircle(
-      Offset(214, height * 0.43),
-      3,
-      Paint()..color = Colors.white,
-    );
-
-    canvas.restore();
-  }
-
-  void _drawTrees(Canvas canvas, double height) {
-    final trunk = Paint()..color = const Color(0xFF7DB9D9);
-    final leaves = Paint()..color = const Color(0xFF8DD2B8);
-    for (final x in [46.0, 82.0, 282.0, 310.0]) {
-      canvas.drawRect(
-        Rect.fromLTWH(x - 2, height * 0.45, 4, height * 0.22),
-        trunk,
-      );
-      canvas.drawCircle(Offset(x, height * 0.42), 16, leaves);
-      canvas.drawCircle(Offset(x - 10, height * 0.46), 12, leaves);
-      canvas.drawCircle(Offset(x + 10, height * 0.46), 12, leaves);
-    }
-  }
-
-  void _drawPhone(Canvas canvas, double height) {
-    final phone = RRect.fromRectAndRadius(
-      Rect.fromLTWH(116, height * 0.08, 112, height * 0.6),
-      const Radius.circular(20),
-    );
-    canvas.drawRRect(phone, Paint()..color = AppColors.charcoal);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(122, height * 0.105, 100, height * 0.55),
-        const Radius.circular(15),
-      ),
-      Paint()..color = const Color(0xFFEAF7FF),
-    );
-
-    final map = Paint()..color = const Color(0xFFB8E3F8);
-    canvas.drawRect(Rect.fromLTWH(122, height * 0.16, 100, height * 0.3), map);
-    final mapLine = Paint()
-      ..color = Colors.white.withValues(alpha: 0.9)
-      ..strokeWidth = 2;
-    for (var i = 0; i < 4; i++) {
-      canvas.drawLine(
-        Offset(120 + i * 27, height * 0.16),
-        Offset(150 + i * 20, height * 0.46),
-        mapLine,
-      );
-    }
-    canvas.drawCircle(
-      Offset(180, height * 0.31),
-      10,
-      Paint()..color = AppColors.primary,
-    );
-    canvas.drawCircle(
-      Offset(180, height * 0.31),
-      4,
-      Paint()..color = Colors.white,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(122, height * 0.46, 100, height * 0.2),
-        const Radius.circular(15),
-      ),
-      Paint()..color = Colors.white,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(134, height * 0.51, 53, 5),
-      Paint()..color = AppColors.charcoal.withValues(alpha: 0.2),
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(134, height * 0.56, 35, 5),
-      Paint()..color = AppColors.primary.withValues(alpha: 0.45),
     );
   }
-
-  void _drawCar(Canvas canvas, double height) {
-    final carPaint = Paint()..color = Colors.white;
-    final windowPaint = Paint()
-      ..color = AppColors.darkBlue.withValues(alpha: 0.85);
-    final outline = Paint()
-      ..color = AppColors.charcoal
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    final body = Path()
-      ..moveTo(190, height * 0.79)
-      ..quadraticBezierTo(198, height * 0.68, 220, height * 0.68)
-      ..lineTo(245, height * 0.68)
-      ..quadraticBezierTo(260, height * 0.68, 273, height * 0.78)
-      ..lineTo(292, height * 0.81)
-      ..quadraticBezierTo(298, height * 0.83, 296, height * 0.88)
-      ..lineTo(190, height * 0.88)
-      ..close();
-    canvas.drawPath(body, carPaint);
-    canvas.drawPath(body, outline);
-    canvas.drawPath(
-      Path()
-        ..moveTo(220, height * 0.69)
-        ..lineTo(234, height * 0.69)
-        ..lineTo(243, height * 0.78)
-        ..lineTo(216, height * 0.78)
-        ..close(),
-      windowPaint,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(238, height * 0.69)
-        ..lineTo(248, height * 0.7)
-        ..quadraticBezierTo(259, height * 0.72, 268, height * 0.78)
-        ..lineTo(246, height * 0.78)
-        ..close(),
-      windowPaint,
-    );
-    for (final x in [210.0, 272.0]) {
-      canvas.drawCircle(
-        Offset(x, height * 0.88),
-        9,
-        Paint()..color = AppColors.charcoal,
-      );
-      canvas.drawCircle(
-        Offset(x, height * 0.88),
-        4,
-        Paint()..color = AppColors.border,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
