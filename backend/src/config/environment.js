@@ -5,6 +5,7 @@ module.exports = {
   port: Number(process.env.PORT || 3000),
   databaseUrl: process.env.MYSQL_URL || process.env.DATABASE_URL,
   clientOrigin: process.env.CLIENT_ORIGIN || '*',
+  googleApplicationCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   universityName: process.env.UNIVERSITY_NAME || 'Universite Ibn Zohr',
   studentEmailDomain: process.env.STUDENT_EMAIL_DOMAIN || 'edu.uiz.ac.ma',
   staffEmailDomain: process.env.STAFF_EMAIL_DOMAIN || 'uiz.ac.ma',

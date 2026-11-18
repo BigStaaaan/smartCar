@@ -4,3 +4,4 @@ coverage/
 *.log
 uploads/*
 !uploads/.gitkeep
+*firebase-adminsdk*.json
