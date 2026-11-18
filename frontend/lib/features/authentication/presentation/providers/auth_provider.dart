@@ -96,6 +96,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      if (e is DioException) {
+        final responseData = e.response?.data;
+        String message = 'Unable to reach the SmartCar server.';
+        if (responseData is Map && responseData['error'] is String) {
+          message = responseData['error'] as String;
+        }
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: message,
+        );
+        return false;
+      }
       state = state.copyWith(
         isLoading: false,
         errorMessage: e.toString(),
@@ -192,9 +204,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      String message = e.toString();
+      if (e is DioException) {
+        final responseData = e.response?.data;
+        if (responseData is Map && responseData['error'] is String) {
+          message = responseData['error'] as String;
+        } else {
+          message =
+              'Unable to reach the backend. Start it with npm start on port 3000.';
+        }
+      }
+      try {
+        await _firebaseAuth.deleteCurrentAccount();
+      } catch (_) {}
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: message,
       );
       return false;
     }

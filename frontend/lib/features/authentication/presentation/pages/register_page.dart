@@ -76,6 +76,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           builder: (_) => const EmailVerificationPage(),
         ),
       );
+    } else {
+      final message =
+          ref.read(authProvider).errorMessage ?? 'Account creation failed.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
