@@ -17,11 +17,17 @@ class DriverDashboardPage extends StatefulWidget {
     this.onPublish,
     this.onTripDetails,
     this.onProfile,
+    this.driverPhotoUrl,
+    this.firstRiderPhotoUrl,
+    this.secondRiderPhotoUrl,
   });
 
   final VoidCallback? onPublish;
   final VoidCallback? onTripDetails;
   final VoidCallback? onProfile;
+  final String? driverPhotoUrl;
+  final String? firstRiderPhotoUrl;
+  final String? secondRiderPhotoUrl;
 
   @override
   State<DriverDashboardPage> createState() => _DriverDashboardPageState();
@@ -198,8 +204,10 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                         const _Pill('Mode Driver', live: true),
                                       ],
                                     ),
-                                    const _Avatar('Y',
-                                        background: _olive, foreground: _cream),
+                                    _Avatar('Y',
+                                        photoUrl: widget.driverPhotoUrl,
+                                        background: _olive,
+                                        foreground: _cream),
                                   ],
                                 )),
                             const SizedBox(height: 20),
@@ -280,14 +288,19 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                         spacing: 10,
                                         runSpacing: 6,
                                         children: [
-                                          const SizedBox(
+                                          SizedBox(
                                             width: 62,
                                             height: 36,
                                             child: Stack(children: [
-                                              _Avatar('S', background: _blue),
+                                              _Avatar('S',
+                                                  photoUrl:
+                                                      widget.firstRiderPhotoUrl,
+                                                  background: _blue),
                                               Positioned(
                                                   left: 26,
-                                                  child: _Avatar('O')),
+                                                  child: _Avatar('O',
+                                                      photoUrl: widget
+                                                          .secondRiderPhotoUrl)),
                                             ]),
                                           ),
                                           Text('$_availableSeats places libres',
@@ -463,26 +476,56 @@ class _Pill extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar(this.initial,
-      {this.background = _teal, this.foreground = _ink});
+  const _Avatar(
+    this.initial, {
+    this.photoUrl,
+    this.background = _teal,
+    this.foreground = _ink,
+  });
 
   final String initial;
+  final String? photoUrl;
   final Color background;
   final Color foreground;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: background,
-          shape: BoxShape.circle,
-          border: Border.all(color: _cream, width: 2),
-        ),
-        child: Text(initial,
-            style: TextStyle(color: foreground, fontWeight: FontWeight.w800)),
-      );
+  Widget build(BuildContext context) {
+    final fallback = Text(
+      initial,
+      style: TextStyle(color: foreground, fontWeight: FontWeight.w800),
+    );
+    final url = Uri.tryParse(photoUrl?.trim() ?? '');
+    final hasPhoto = url != null &&
+        (url.scheme == 'https' || url.scheme == 'http') &&
+        url.host.isNotEmpty;
+
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: background,
+        shape: BoxShape.circle,
+        border: Border.all(color: _cream, width: 2),
+      ),
+      child: hasPhoto
+          ? ClipOval(
+              child: SizedBox.expand(
+                child: Image.network(
+                  url.toString(),
+                  fit: BoxFit.cover,
+                  excludeFromSemantics: true,
+                  frameBuilder:
+                      (context, child, frame, wasSynchronouslyLoaded) =>
+                          frame == null ? Center(child: fallback) : child,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Center(child: fallback),
+                ),
+              ),
+            )
+          : fallback,
+    );
+  }
 }
 
 class _BottomBar extends StatelessWidget {
