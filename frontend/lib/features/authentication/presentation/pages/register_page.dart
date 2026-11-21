@@ -22,7 +22,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String _university = 'Faculté des Sciences d’Agadir';
-  String _accountType = 'STUDENT';
   bool _obscurePassword = true;
   bool _acceptedTerms = false;
 
@@ -67,7 +66,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           university: _university,
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          accountType: _accountType,
+          accountType:
+              EmailValidator.getAccountType(_emailController.text) ??
+                  'STUDENT',
         );
     if (!mounted) return;
     if (success) {
@@ -298,32 +299,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _RoleButton(
-                                    label: 'Student',
-                                    detail: '(Étudiant)',
-                                    icon: Icons.school_outlined,
-                                    selected: _accountType == 'STUDENT',
-                                    onTap: () => setState(
-                                        () => _accountType = 'STUDENT'),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: _RoleButton(
-                                    label: 'Staff',
-                                    detail: '(Personnel)',
-                                    icon: Icons.badge_outlined,
-                                    selected: _accountType == 'STAFF',
-                                    onTap: () =>
-                                        setState(() => _accountType = 'STAFF'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
                             _fieldLabel('Full Legal Name'),
                             const SizedBox(height: 5),
                             Container(
@@ -451,10 +426,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               decoration: _fieldBox,
                               child: TextFormField(
                                 controller: _emailController,
-                                validator: (value) => EmailValidator.validate(
-                                  value,
-                                  accountType: _accountType,
-                                ),
+                                validator: EmailValidator.validate,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: _inputDecoration(
                                   hint: 'usr.name@university.edu',
@@ -651,7 +623,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              'Create Student Account',
+                                              'Create Account',
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w700,
@@ -766,61 +738,6 @@ const BoxDecoration _fieldBox = BoxDecoration(
   ],
 );
 
-class _RoleButton extends StatelessWidget {
-  final String label;
-  final String detail;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _RoleButton({
-    required this.label,
-    required this.detail,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: Material(
-        color: selected ? AppColors.brandIndigo : Colors.white,
-        shape: const StadiumBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const StadiumBorder(),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: 16,
-                  color: selected ? Colors.white : AppColors.onSurfaceVariant),
-              const SizedBox(width: 5),
-              Text(label,
-                  style: TextStyle(
-                      color: selected ? Colors.white : AppColors.onSurface,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800)),
-              const SizedBox(width: 3),
-              Flexible(
-                child: Text(
-                  detail,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: selected ? Colors.white : AppColors.onSurfaceVariant,
-                    fontSize: 9.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _GoogleIconPainter extends CustomPainter {
   @override
