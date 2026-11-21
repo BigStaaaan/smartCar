@@ -3,6 +3,20 @@ class EmailValidator {
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
 
+  static String? getAccountType(String? value) {
+    if (value == null) return null;
+    final trimmed = value.trim().toLowerCase();
+    final atIndex = trimmed.lastIndexOf('@');
+    if (atIndex == -1) return null;
+    final domain = trimmed.substring(atIndex + 1);
+    if (domain == 'edu.uiz.ac.ma') return 'STUDENT';
+    if (domain == 'uiz.ac.ma') return 'STAFF';
+    return null;
+  }
+
+  static bool isUniversityEmail(String? value) =>
+      getAccountType(value) != null;
+
   static String? validateStudent(String? value) =>
       validate(value, accountType: 'STUDENT');
 

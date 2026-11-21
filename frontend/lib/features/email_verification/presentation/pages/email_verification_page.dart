@@ -80,7 +80,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       } else {
         setState(
           () => _message =
-              'Votre adresse universitaire n’est pas encore verifiee.',
+              'Votre adresse universitaire nâ€™est pas encore verifiee.',
         );
       }
     } finally {
@@ -121,13 +121,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Vérifiez votre adresse universitaire',
+                      'VÃ©rifiez votre adresse universitaire',
                       textAlign: TextAlign.center,
                       style: AppTypography.headlineLg,
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Nous avons envoyé un lien de vérification à $email.',
+                      'Nous avons envoyÃ© un lien de vÃ©rification Ã  $email.',
                       textAlign: TextAlign.center,
                       style: AppTypography.bodyMd,
                     ),
@@ -146,7 +146,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                       height: 52,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _checkVerification,
-                        child: const Text('J’ai vérifié mon adresse'),
+                        child: const Text('Jâ€™ai vÃ©rifiÃ© mon adresse'),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -165,7 +165,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                           Navigator.of(context).pop();
                         }
                       },
-                      child: const Text('Changer d’adresse / Retour'),
+                      child: const Text('Changer dâ€™adresse / Retour'),
                     ),
                   ],
                 ),
