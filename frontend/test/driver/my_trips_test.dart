@@ -91,18 +91,8 @@ void main() {
     await tap(tester, find.text('Gare'));
     expect(find.text('Gare → Campus', findRichText: true), findsOneWidget);
     expect(find.text('Places proposées'), findsOneWidget);
-    expect(
-        tester
-            .widget<OutlinedButton>(
-                find.widgetWithText(OutlinedButton, 'Modifier'))
-            .onPressed,
-        isNull);
-    expect(
-        tester
-            .widget<OutlinedButton>(
-                find.widgetWithText(OutlinedButton, 'Annuler'))
-            .onPressed,
-        isNull);
+    expect(find.text('Modifier'), findsOneWidget);
+    expect(find.text('Annuler le trajet'), findsOneWidget);
     expect(find.text('12 km'), findsNothing);
     expect(find.text('25 min'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -133,6 +123,85 @@ void main() {
     await tap(tester, find.text('Départ annulé'));
     expect(find.text('Annulé'), findsOneWidget);
     expect(find.text('Modifier'), findsNothing);
+  });
+
+  testWidgets('prefills a trip and refreshes its detail and list after editing',
+      (tester) async {
+    final initial =
+        savedTrip('Gare', DateTime.now().add(const Duration(days: 2)));
+    final repository = DemoTripRepository(initialTrips: [initial]);
+    await openTrips(tester, repository);
+    await tap(tester, find.text('Gare'));
+    await tap(tester, find.text('Modifier'));
+
+    final originField = find.byKey(const ValueKey('Départ'));
+    final destinationField = find.byKey(const ValueKey('Destination'));
+    expect(tester.widget<TextFormField>(originField).controller!.text, 'Gare');
+    expect(tester.widget<TextFormField>(destinationField).controller!.text,
+        'Université');
+    expect(find.text('Gratuit'), findsOneWidget);
+
+    await tester.enterText(originField, '');
+    await tap(tester, find.text('Enregistrer les modifications'));
+    expect((await repository.listMine()).single.details.origin, 'Gare');
+
+    await tap(tester, originField);
+    await tester.enterText(originField, 'Bibliothèque');
+    await tap(tester, find.text('Enregistrer les modifications'));
+
+    final updated = (await repository.listMine()).single;
+    expect(updated.id, initial.id);
+    expect(updated.details.origin, 'Bibliothèque');
+    expect(updated.details.seats, initial.details.seats);
+    expect(updated.details.vehicleId, initial.details.vehicleId);
+    expect(find.text('Bibliothèque → Université', findRichText: true),
+        findsOneWidget);
+    await tap(tester, find.byTooltip('Retour aux trajets'));
+    expect(find.text('Bibliothèque'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps a trip until cancellation is confirmed and moves it',
+      (tester) async {
+    final initial =
+        savedTrip('Gare', DateTime.now().add(const Duration(days: 2)));
+    final repository = DemoTripRepository(initialTrips: [initial]);
+    await openTrips(tester, repository);
+    await tap(tester, find.text('Gare'));
+    await tap(tester, find.text('Annuler le trajet'));
+    await tap(tester, find.text('Conserver le trajet'));
+    expect((await repository.listMine()).single.status, TripStatus.published);
+
+    await tap(tester, find.text('Annuler le trajet'));
+    await tap(tester, find.text('Confirmer l’annulation'));
+    final cancelled = (await repository.listMine()).single;
+    expect(cancelled.status, TripStatus.cancelled);
+    expect(cancelled.id, initial.id);
+    expect(cancelled.details, same(initial.details));
+    expect(find.text('Modifier'), findsNothing);
+    expect(find.text('Annulé'), findsOneWidget);
+
+    await tap(tester, find.byTooltip('Retour aux trajets'));
+    expect(find.text('Gare'), findsNothing);
+    await tap(tester, find.text('Annulés'));
+    expect(find.text('Gare'), findsOneWidget);
+  });
+
+  test('repository rejects changes to past and cancelled trips', () async {
+    final now = DateTime.now();
+    final past = savedTrip('Passé', now.subtract(const Duration(days: 1)));
+    final upcoming = savedTrip('À venir', now.add(const Duration(days: 1)));
+    final repository = DemoTripRepository(initialTrips: [past, upcoming]);
+
+    await expectLater(
+        repository.update(past.id, upcoming.details), throwsStateError);
+    await expectLater(repository.cancel(past.id), throwsStateError);
+    await expectLater(
+        repository.update(upcoming.id, past.details), throwsArgumentError);
+    await repository.cancel(upcoming.id);
+    await expectLater(
+        repository.update(upcoming.id, upcoming.details), throwsStateError);
+    await expectLater(repository.cancel(upcoming.id), throwsStateError);
   });
 
   testWidgets('shows the exact coordinate labels supplied by the preview',

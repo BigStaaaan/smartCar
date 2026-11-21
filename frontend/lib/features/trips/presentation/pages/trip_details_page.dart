@@ -5,7 +5,9 @@ import '../../../vehicles/domain/vehicle.dart';
 import '../../../vehicles/presentation/vehicle_provider.dart';
 import '../../../vehicles/presentation/vehicle_theme.dart';
 import '../../domain/entities/trip.dart';
+import '../providers/trip_provider.dart';
 import '../widgets/trip_publish_controls.dart';
+import 'publish_trip_page.dart';
 
 String tripDateLabel(DateTime departure) {
   const days = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
@@ -39,23 +41,91 @@ String tripContributionLabel(Trip trip) {
   return amount == null || amount == 0 ? 'Gratuit' : '$amount DH';
 }
 
-class TripDetailsPage extends ConsumerWidget {
+class TripDetailsPage extends ConsumerStatefulWidget {
   const TripDetailsPage({
     super.key,
     required this.trip,
+    this.isPreview = false,
     this.originCoordinates,
     this.destinationCoordinates,
   });
 
   final Trip trip;
+  final bool isPreview;
   final String? originCoordinates;
   final String? destinationCoordinates;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TripDetailsPage> createState() => _TripDetailsPageState();
+}
+
+class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
+  late Trip trip = widget.trip;
+  bool _cancelling = false;
+
+  void _refreshTrip(Trip updatedTrip) {
+    setState(() => trip = updatedTrip);
+    ref.invalidate(myTripsProvider);
+  }
+
+  Future<void> _editTrip() async {
+    if (!trip.isUpcoming(DateTime.now())) return;
+    final updatedTrip = await Navigator.of(context).push<Trip>(
+      MaterialPageRoute(
+        builder: (_) =>
+            PublishTripPage(isPreview: widget.isPreview, tripToEdit: trip),
+      ),
+    );
+    if (mounted && updatedTrip != null) _refreshTrip(updatedTrip);
+  }
+
+  Future<void> _cancelTrip(BuildContext themedContext) async {
+    if (_cancelling || !trip.isUpcoming(DateTime.now())) return;
+    setState(() => _cancelling = true);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: themedContext,
+        builder: (context) => AlertDialog(
+          title: const Text('Annuler le trajet ?'),
+          content:
+              const Text('Le trajet restera visible dans les trajets annulés.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Conserver le trajet')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Confirmer l’annulation')),
+          ],
+        ),
+      );
+      if (!mounted || confirmed != true) return;
+      final updatedTrip =
+          await ref.read(tripRepositoryProvider).cancel(trip.id);
+      if (mounted) _refreshTrip(updatedTrip);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Annulation impossible. Réessayez.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final vehicles =
         ref.watch(vehiclesProvider).valueOrNull ?? const <Vehicle>[];
     final details = trip.details;
+    final originCoordinates = details.origin == widget.trip.details.origin
+        ? widget.originCoordinates
+        : null;
+    final destinationCoordinates =
+        details.destination == widget.trip.details.destination
+            ? widget.destinationCoordinates
+            : null;
     final vehicle = vehicles
         .where((vehicle) => vehicle.id == details.vehicleId)
         .firstOrNull;
@@ -188,15 +258,18 @@ class TripDetailsPage extends ConsumerWidget {
                           ),
                           if (trip.isUpcoming(now)) ...[
                             const SizedBox(height: 14),
-                            const Row(children: [
+                            Row(children: [
                               Expanded(
                                   child: OutlinedButton(
-                                      onPressed: null,
-                                      child: Text('Modifier'))),
-                              SizedBox(width: 10),
+                                      onPressed: _cancelling ? null : _editTrip,
+                                      child: const Text('Modifier'))),
+                              const SizedBox(width: 10),
                               Expanded(
                                   child: OutlinedButton(
-                                      onPressed: null, child: Text('Annuler'))),
+                                      onPressed: _cancelling
+                                          ? null
+                                          : () => _cancelTrip(context),
+                                      child: const Text('Annuler le trajet'))),
                             ]),
                           ],
                         ],

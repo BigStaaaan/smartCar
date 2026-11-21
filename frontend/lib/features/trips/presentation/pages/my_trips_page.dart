@@ -65,6 +65,7 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
           reduced ? Duration.zero : const Duration(milliseconds: 250),
       pageBuilder: (context, animation, secondaryAnimation) => TripDetailsPage(
         trip: trip,
+        isPreview: widget.isPreview,
         originCoordinates: coordinates?.origin,
         destinationCoordinates: coordinates?.destination,
       ),
