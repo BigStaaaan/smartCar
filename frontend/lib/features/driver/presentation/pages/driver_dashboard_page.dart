@@ -4,6 +4,8 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../widgets/driver_avatar.dart';
+
 const _cream = Color(0xffeee7d7);
 const _ink = Color(0xff232715);
 const _olive = Color(0xff4f5330);
@@ -17,6 +19,7 @@ class DriverDashboardPage extends StatefulWidget {
     this.onPublish,
     this.onTripDetails,
     this.onProfile,
+    this.onRequests,
     this.driverPhotoUrl,
     this.firstRiderPhotoUrl,
     this.secondRiderPhotoUrl,
@@ -25,6 +28,7 @@ class DriverDashboardPage extends StatefulWidget {
   final VoidCallback? onPublish;
   final VoidCallback? onTripDetails;
   final VoidCallback? onProfile;
+  final VoidCallback? onRequests;
   final String? driverPhotoUrl;
   final String? firstRiderPhotoUrl;
   final String? secondRiderPhotoUrl;
@@ -204,7 +208,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                         const _Pill('Mode Driver', live: true),
                                       ],
                                     ),
-                                    _Avatar('Y',
+                                    DriverAvatar('Y',
                                         photoUrl: widget.driverPhotoUrl,
                                         background: _olive,
                                         foreground: _cream),
@@ -292,13 +296,13 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                             width: 62,
                                             height: 36,
                                             child: Stack(children: [
-                                              _Avatar('S',
+                                              DriverAvatar('S',
                                                   photoUrl:
                                                       widget.firstRiderPhotoUrl,
                                                   background: _blue),
                                               Positioned(
                                                   left: 26,
-                                                  child: _Avatar('O',
+                                                  child: DriverAvatar('O',
                                                       photoUrl: widget
                                                           .secondRiderPhotoUrl)),
                                             ]),
@@ -353,7 +357,8 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                           bottom: 14,
                           child: _BottomBar(
                               onPublish: widget.onPublish,
-                              onProfile: widget.onProfile),
+                              onProfile: widget.onProfile,
+                              onRequests: widget.onRequests),
                         ),
                       ],
                     );
@@ -475,64 +480,12 @@ class _Pill extends StatelessWidget {
       );
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar(
-    this.initial, {
-    this.photoUrl,
-    this.background = _teal,
-    this.foreground = _ink,
-  });
-
-  final String initial;
-  final String? photoUrl;
-  final Color background;
-  final Color foreground;
-
-  @override
-  Widget build(BuildContext context) {
-    final fallback = Text(
-      initial,
-      style: TextStyle(color: foreground, fontWeight: FontWeight.w800),
-    );
-    final url = Uri.tryParse(photoUrl?.trim() ?? '');
-    final hasPhoto = url != null &&
-        (url.scheme == 'https' || url.scheme == 'http') &&
-        url.host.isNotEmpty;
-
-    return Container(
-      width: 36,
-      height: 36,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: background,
-        shape: BoxShape.circle,
-        border: Border.all(color: _cream, width: 2),
-      ),
-      child: hasPhoto
-          ? ClipOval(
-              child: SizedBox.expand(
-                child: Image.network(
-                  url.toString(),
-                  fit: BoxFit.cover,
-                  excludeFromSemantics: true,
-                  frameBuilder:
-                      (context, child, frame, wasSynchronouslyLoaded) =>
-                          frame == null ? Center(child: fallback) : child,
-                  errorBuilder: (context, error, stackTrace) =>
-                      Center(child: fallback),
-                ),
-              ),
-            )
-          : fallback,
-    );
-  }
-}
-
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({this.onPublish, this.onProfile});
+  const _BottomBar({this.onPublish, this.onProfile, this.onRequests});
 
   final VoidCallback? onPublish;
   final VoidCallback? onProfile;
+  final VoidCallback? onRequests;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -555,8 +508,10 @@ class _BottomBar extends StatelessWidget {
                         icon: Icons.home_outlined,
                         label: 'Accueil',
                         selected: true),
-                    const _BarItem(
-                        icon: Icons.inbox_outlined, label: 'Demandes'),
+                    _BarItem(
+                        icon: Icons.inbox_outlined,
+                        label: 'Demandes',
+                        onTap: onRequests),
                     const Spacer(),
                     const _BarItem(icon: Icons.show_chart, label: 'Prévu'),
                     _BarItem(
