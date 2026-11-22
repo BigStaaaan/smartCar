@@ -72,6 +72,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       activeMode:
           (profile['activeMode'] ?? 'PASSENGER').toString().toUpperCase(),
       driverProfile: driverProfile,
+      studentCardUrl: profile['studentCardUrl']?.toString(),
+      verificationStatus:
+          (profile['verificationStatus'] ?? 'PENDING').toString().toUpperCase(),
     );
   }
 
@@ -153,7 +156,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> signInWithGoogle() async {
+  Future<bool> signInWithGoogle({
+    Map<String, String>? studentCardPayload,
+  }) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
@@ -183,6 +188,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (idToken == null) throw Exception('Authentication token unavailable');
       await _dio.post(
         '/auth/google',
+        data: studentCardPayload ?? const <String, String>{},
         options: Options(headers: {'Authorization': 'Bearer $idToken'}),
       );
 
@@ -233,6 +239,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
     required String accountType,
+    Map<String, String>? studentCardPayload,
     bool isDriver = false,
   }) async {
     final emailError = EmailValidator.validate(email, accountType: accountType);
@@ -264,6 +271,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           'fullName': fullName,
           'university': university,
           'accountType': accountType,
+          ...?studentCardPayload,
         },
         options: Options(headers: {'Authorization': 'Bearer $idToken'}),
       );

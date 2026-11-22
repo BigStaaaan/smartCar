@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
@@ -24,6 +27,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   String _university = 'Faculté des Sciences d’Agadir';
   bool _obscurePassword = true;
   bool _acceptedTerms = false;
+  XFile? _studentCard;
+  bool _isPickingStudentCard = false;
 
   @override
   void dispose() {
@@ -51,9 +56,55 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return 'Strong';
   }
 
+  Future<Map<String, String>> _studentCardPayload() async {
+    final card = _studentCard;
+    if (card == null) return <String, String>{};
+    final bytes = await card.readAsBytes();
+    return <String, String>{
+      'studentCard': base64Encode(bytes),
+      'studentCardName': card.name,
+      'studentCardMimeType': card.mimeType ?? 'image/jpeg',
+    };
+  }
+
+  Future<void> _pickStudentCard() async {
+    setState(() => _isPickingStudentCard = true);
+    try {
+      final card = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
+      if (!mounted) return;
+      if (card == null) return;
+      final bytes = await card.readAsBytes();
+      if (!mounted) return;
+      if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Student card image must be smaller than 5 MB'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      setState(() => _studentCard = card);
+    } finally {
+      if (mounted) setState(() => _isPickingStudentCard = false);
+    }
+  }
+
   Future<void> _handleSignUp() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
+    if (_studentCard == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload your student card for verification'),
+        ),
+      );
+      return;
+    }
     if (!_acceptedTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please accept the carpool guidelines')),
@@ -61,6 +112,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return;
     }
 
+    final cardPayload = await _studentCardPayload();
     final success = await ref.read(authProvider.notifier).signUpWithEmail(
           fullName: _nameController.text.trim(),
           university: _university,
@@ -69,6 +121,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           accountType:
               EmailValidator.getAccountType(_emailController.text) ??
                   'STUDENT',
+          studentCardPayload: cardPayload,
         );
     if (!mounted) return;
     if (success) {
@@ -90,7 +143,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Future<void> _handleGoogleSignUp() async {
-    final success = await ref.read(authProvider.notifier).signInWithGoogle();
+    if (_studentCard == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload your student card for verification'),
+        ),
+      );
+      return;
+    }
+    final cardPayload = await _studentCardPayload();
+    final success = await ref
+        .read(authProvider.notifier)
+        .signInWithGoogle(studentCardPayload: cardPayload);
     if (!mounted) return;
     if (success) {
       Navigator.of(context).pushReplacement(
@@ -493,6 +557,93 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                     ),
                                   ),
                               ],
+                            ),
+                            const SizedBox(height: 12),
+                            _fieldLabel('Student Card', trailing: 'required'),
+                            const SizedBox(height: 5),
+                            InkWell(
+                              onTap:
+                                  _isPickingStudentCard ? null : _pickStudentCard,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                width: double.infinity,
+                                height: 68,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: _studentCard == null
+                                        ? AppColors.outlineVariant
+                                        : AppColors.brandIndigo,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryFixed,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: _isPickingStudentCard
+                                          ? const Padding(
+                                              padding: EdgeInsets.all(12),
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Icon(
+                                              _studentCard == null
+                                                  ? Icons.upload_rounded
+                                                  : Icons.check_circle_rounded,
+                                              color: AppColors.brandIndigo,
+                                            ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _studentCard == null
+                                                ? 'Upload student card'
+                                                : _studentCard!.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: AppTypography.labelSm
+                                                .copyWith(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _studentCard == null
+                                                ? 'JPG, PNG or WEBP - max 5 MB'
+                                                : 'Ready for admin review',
+                                            style: AppTypography.caption
+                                                .copyWith(fontSize: 9.5),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      _studentCard == null
+                                          ? Icons.chevron_right_rounded
+                                          : Icons.sync_rounded,
+                                      color: AppColors.outline,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Container(

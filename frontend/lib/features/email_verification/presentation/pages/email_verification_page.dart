@@ -80,7 +80,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       } else {
         setState(
           () => _message =
-              'Votre adresse universitaire nâ€™est pas encore verifiee.',
+              'Votre adresse universitaire nÃ¢â‚¬â„¢est pas encore verifiee.',
         );
       }
     } finally {
@@ -121,13 +121,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'VÃ©rifiez votre adresse universitaire',
+                      'VÃƒÂ©rifiez votre adresse universitaire',
                       textAlign: TextAlign.center,
                       style: AppTypography.headlineLg,
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Nous avons envoyÃ© un lien de vÃ©rification Ã  $email.',
+                      'Nous avons envoyÃƒÂ© un lien de vÃƒÂ©rification ÃƒÂ  $email.',
                       textAlign: TextAlign.center,
                       style: AppTypography.bodyMd,
                     ),
@@ -146,7 +146,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                       height: 52,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _checkVerification,
-                        child: const Text('Jâ€™ai vÃ©rifiÃ© mon adresse'),
+                        child: const Text('JÃ¢â‚¬â„¢ai vÃƒÂ©rifiÃƒÂ© mon adresse'),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -165,7 +165,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                           Navigator.of(context).pop();
                         }
                       },
-                      child: const Text('Changer dâ€™adresse / Retour'),
+                      child: const Text('Changer dÃ¢â‚¬â„¢adresse / Retour'),
                     ),
                   ],
                 ),

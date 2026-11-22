@@ -8,6 +8,8 @@ class AuthUser {
   final String role;
   final String activeMode;
   final Map<String, dynamic>? driverProfile;
+  final String? studentCardUrl;
+  final String verificationStatus;
 
   const AuthUser({
     required this.id,
@@ -19,5 +21,7 @@ class AuthUser {
     this.role = 'PASSENGER',
     this.activeMode = 'PASSENGER',
     this.driverProfile,
+    this.studentCardUrl,
+    this.verificationStatus = 'PENDING',
   });
 }
