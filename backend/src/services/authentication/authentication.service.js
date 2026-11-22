@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../config/database');
 const {
@@ -22,6 +24,24 @@ const User = sequelize.models.User || sequelize.define('User', {
   university: { type: DataTypes.STRING, allowNull: false },
   emailVerified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   universityVerified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  studentCardUrl: { type: DataTypes.STRING, allowNull: true },
+  verificationStatus: {
+    type: DataTypes.ENUM(
+      'NOT_SUBMITTED',
+      'PENDING',
+      'APPROVED',
+      'REJECTED',
+      'REQUIRES_RESUBMISSION',
+    ),
+    allowNull: false,
+    defaultValue: 'NOT_SUBMITTED',
+  },
+  studentId: { type: DataTypes.STRING, allowNull: true },
+  faculty: { type: DataTypes.STRING, allowNull: true },
+  department: { type: DataTypes.STRING, allowNull: true },
+  submittedAt: { type: DataTypes.DATE, allowNull: true },
+  reviewedAt: { type: DataTypes.DATE, allowNull: true },
+  rejectionReason: { type: DataTypes.TEXT, allowNull: true },
   role: {
     type: DataTypes.ENUM('PASSENGER', 'DRIVER'),
     allowNull: false,
@@ -51,6 +71,46 @@ async function ensureSchema() {
   await User.sync();
 }
 
+function saveStudentCard(firebaseUid, body) {
+  if (!body?.studentCard) return null;
+  const allowedMimeTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ]);
+  const mimeType = String(body.studentCardMimeType || '').toLowerCase();
+  if (!allowedMimeTypes.has(mimeType)) {
+    const error = new Error('Student card must be a JPG, PNG or WEBP image.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let bytes;
+  try {
+    bytes = Buffer.from(body.studentCard, 'base64');
+  } catch (_error) {
+    const error = new Error('Invalid student card upload.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!bytes.length || bytes.length > 5 * 1024 * 1024) {
+    const error = new Error('Student card image must be smaller than 5 MB.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const extension = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+  }[mimeType];
+  const uploadDirectory = path.join(process.cwd(), 'uploads', 'student-cards');
+  fs.mkdirSync(uploadDirectory, { recursive: true });
+  const fileName = `${firebaseUid}-${Date.now()}${extension}`;
+  fs.writeFileSync(path.join(uploadDirectory, fileName), bytes);
+  return `/uploads/student-cards/${fileName}`;
+}
+
 async function syncProfile(decodedToken, body = {}, options = {}) {
   await ensureSchema();
 
@@ -75,6 +135,16 @@ async function syncProfile(decodedToken, body = {}, options = {}) {
     throw error;
   }
 
+  const studentCardUrl = saveStudentCard(decodedToken.uid, body);
+  const existingUser = await User.findOne({
+    where: { firebaseUid: decodedToken.uid },
+  });
+  if (!studentCardUrl && (!existingUser || !existingUser.studentCardUrl)) {
+    const error = new Error('A student card is required for verification.');
+    error.statusCode = 400;
+    throw error;
+  }
+
   const [user, created] = await User.findOrCreate({
     where: { firebaseUid: decodedToken.uid },
     defaults: {
@@ -85,6 +155,8 @@ async function syncProfile(decodedToken, body = {}, options = {}) {
       university: body.university?.trim() || 'Universite Ibn Zohr',
       emailVerified: decodedToken.email_verified === true,
       universityVerified: false,
+      studentCardUrl,
+      verificationStatus: 'PENDING',
       role: 'PASSENGER',
       activeMode: 'PASSENGER',
       driverProfile: null,
@@ -97,11 +169,14 @@ async function syncProfile(decodedToken, body = {}, options = {}) {
       error.statusCode = 409;
       throw error;
     }
-    await user.update({
+    const updates = {
       fullName: body.fullName?.trim() || user.fullName,
       email: validation.email,
       emailVerified: decodedToken.email_verified === true,
-    });
+      verificationStatus: user.universityVerified ? 'APPROVED' : 'PENDING',
+    };
+    if (studentCardUrl) updates.studentCardUrl = studentCardUrl;
+    await user.update(updates);
   }
 
   return user;
@@ -147,14 +222,29 @@ async function verifyUniversity(decodedToken) {
       accountType: validation.accountType,
       university: 'Universite Ibn Zohr',
       emailVerified: true,
-      universityVerified: true,
+      universityVerified: false,
       role: 'PASSENGER',
       activeMode: 'PASSENGER',
     },
   });
   if (!created) {
-    await user.update({ emailVerified: true, universityVerified: true });
+    await user.update({ emailVerified: true });
   }
+  return user;
+}
+
+async function approveUniversity(firebaseUid) {
+  await ensureSchema();
+  const user = await User.findOne({ where: { firebaseUid } });
+  if (!user) {
+    const error = new Error('User profile not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+  await user.update({
+    universityVerified: true,
+    verificationStatus: 'APPROVED',
+  });
   return user;
 }
 
@@ -253,6 +343,7 @@ module.exports = {
   getProfile,
   markEmailVerified,
   verifyUniversity,
+  approveUniversity,
   activateDriver,
   switchMode,
 };

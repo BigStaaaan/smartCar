@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../university_verification/presentation/pages/university_verification_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -20,17 +21,9 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _verifyUniversity() async {
-    final success =
-        await ref.read(authProvider.notifier).verifyUniversity();
-    if (!mounted) return;
-    final message = ref.read(authProvider).errorMessage ??
-        (success
-            ? 'University verification completed.'
-            : 'University verification failed.');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: success ? AppColors.success : AppColors.error,
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const UniversityVerificationPage(),
       ),
     );
   }

@@ -1,0 +1,16 @@
+.admin-shell { min-height:100vh; display:grid; grid-template-columns:240px 1fr; }
+.admin-sidebar { display:flex; flex-direction:column; gap:24px; padding:24px 16px; background:#17171c; color:white; }
+.admin-brand { font-size:20px; font-weight:900; }
+.admin-sidebar nav { display:grid; }
+.admin-nav-active { padding:12px; border-radius:8px; background:#3036c8; font-size:14px; font-weight:700; }
+.signout { margin-top:auto; height:40px; border:1px solid #555660; border-radius:8px; background:transparent; color:white; }
+.admin-main { min-width:0; }
+.admin-topbar { height:72px; display:flex; align-items:center; padding:0 28px; background:white; border-bottom:1px solid #e0e3e8; }
+.admin-topbar h1 { margin:0; font-size:22px; }
+@media (max-width:760px) {
+  .admin-shell { grid-template-columns:72px 1fr; }
+  .admin-sidebar { padding:16px 8px; }
+  .admin-brand { font-size:13px; text-align:center; }
+  .admin-nav-active { font-size:0; }
+  .admin-nav-active::after { content:'Review'; font-size:12px; }
+}

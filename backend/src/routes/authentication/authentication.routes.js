@@ -9,6 +9,12 @@ router.post('/register', authenticate, asyncHandler(authenticationController.reg
 router.post('/google', authenticate, asyncHandler(authenticationController.google));
 router.get('/verification-status', authenticate, asyncHandler(authenticationController.verificationStatus));
 router.post('/verify-university', authenticate, asyncHandler(authenticationController.verifyUniversity));
+router.post(
+  '/users/:firebaseUid/approve-university',
+  authenticate,
+  authenticate.requireAdmin,
+  asyncHandler(authenticationController.approveUniversity),
+);
 router.post('/driver/activate', authenticate, asyncHandler(authenticationController.activateDriver));
 router.put('/mode', authenticate, asyncHandler(authenticationController.switchMode));
 router.get('/me', authenticate, asyncHandler(authenticationController.me));

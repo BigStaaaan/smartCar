@@ -12,6 +12,8 @@ function publicUser(user) {
     role: user.role || 'PASSENGER',
     activeMode: user.activeMode || 'PASSENGER',
     driverProfile: user.driverProfile || null,
+    studentCardUrl: user.studentCardUrl || null,
+    verificationStatus: user.verificationStatus || 'PENDING',
   };
 }
 
@@ -43,11 +45,22 @@ async function verificationStatus(req, res) {
   return res.json({
     emailVerified: req.user.email_verified === true,
     universityVerified: user?.universityVerified === true,
+    verificationStatus: user?.verificationStatus || 'NOT_SUBMITTED',
+    submittedAt: user?.submittedAt || null,
+    reviewedAt: user?.reviewedAt || null,
+    rejectionReason: user?.rejectionReason || null,
   });
 }
 
 async function verifyUniversity(req, res) {
   const user = await authenticationService.verifyUniversity(req.user);
+  return res.json({ user: publicUser(user) });
+}
+
+async function approveUniversity(req, res) {
+  const user = await authenticationService.approveUniversity(
+    req.params.firebaseUid,
+  );
   return res.json({ user: publicUser(user) });
 }
 
@@ -71,6 +84,7 @@ module.exports = {
   me,
   verificationStatus,
   verifyUniversity,
+  approveUniversity,
   activateDriver,
   switchMode,
   logout,
