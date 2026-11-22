@@ -1,6 +1,6 @@
 import 'publish_trip.dart';
 
-enum TripStatus { published, cancelled }
+enum TripStatus { published, cancelled, inProgress, completed }
 
 class Trip {
   const Trip({
@@ -15,4 +15,7 @@ class Trip {
 
   bool isUpcoming(DateTime now) =>
       status == TripStatus.published && details.departureAt.isAfter(now);
+
+  bool canStart(DateTime now) =>
+      status == TripStatus.published && !details.departureAt.isAfter(now);
 }

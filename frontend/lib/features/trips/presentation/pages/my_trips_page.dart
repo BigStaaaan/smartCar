@@ -36,9 +36,10 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
   List<Trip> _visibleTrips(List<Trip> trips, DateTime now) {
     final matching = trips
         .where((trip) => switch (_filter) {
-              _TripFilter.upcoming => trip.isUpcoming(now),
+              _TripFilter.upcoming =>
+                trip.isUpcoming(now) || trip.status == TripStatus.inProgress,
               _TripFilter.past =>
-                trip.status != TripStatus.cancelled && !trip.isUpcoming(now),
+                trip.status == TripStatus.completed || trip.canStart(now),
               _TripFilter.cancelled => trip.status == TripStatus.cancelled,
             })
         .toList();
@@ -65,6 +66,7 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
           reduced ? Duration.zero : const Duration(milliseconds: 250),
       pageBuilder: (context, animation, secondaryAnimation) => TripDetailsPage(
         trip: trip,
+        isPreview: widget.isPreview,
         originCoordinates: coordinates?.origin,
         destinationCoordinates: coordinates?.destination,
       ),
@@ -119,6 +121,16 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Row(children: [
+                                        if (Navigator.canPop(context)) ...[
+                                          TripCircleButton(
+                                            tooltip: 'Retour',
+                                            onPressed: () =>
+                                                Navigator.maybePop(context),
+                                            child:
+                                                const Icon(Icons.chevron_left),
+                                          ),
+                                          const SizedBox(width: 8),
+                                        ],
                                         Expanded(
                                             child: Text(
                                           'Mes trajets',
