@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,8 +34,12 @@ String tripDateLabel(DateTime departure) {
 }
 
 String tripStatusLabel(Trip trip, DateTime now) {
-  if (trip.status == TripStatus.cancelled) return 'Annulé';
-  return trip.isUpcoming(now) ? 'Publié' : 'Passé';
+  return switch (trip.status) {
+    TripStatus.published => trip.isUpcoming(now) ? 'Publié' : 'Prêt au départ',
+    TripStatus.cancelled => 'Annulé',
+    TripStatus.inProgress => 'En cours',
+    TripStatus.completed => 'Terminé',
+  };
 }
 
 String tripContributionLabel(Trip trip) {
@@ -46,12 +52,14 @@ class TripDetailsPage extends ConsumerStatefulWidget {
     super.key,
     required this.trip,
     this.isPreview = false,
+    this.backTooltip = 'Retour aux trajets',
     this.originCoordinates,
     this.destinationCoordinates,
   });
 
   final Trip trip;
   final bool isPreview;
+  final String backTooltip;
   final String? originCoordinates;
   final String? destinationCoordinates;
 
@@ -61,10 +69,34 @@ class TripDetailsPage extends ConsumerStatefulWidget {
 
 class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
   late Trip trip = widget.trip;
-  bool _cancelling = false;
+  bool _changingStatus = false;
+  Timer? _departureTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _watchDeparture();
+  }
+
+  @override
+  void dispose() {
+    _departureTimer?.cancel();
+    super.dispose();
+  }
+
+  void _watchDeparture() {
+    _departureTimer?.cancel();
+    final now = DateTime.now();
+    if (trip.isUpcoming(now)) {
+      _departureTimer = Timer(trip.details.departureAt.difference(now), () {
+        setState(() {});
+      });
+    }
+  }
 
   void _refreshTrip(Trip updatedTrip) {
     setState(() => trip = updatedTrip);
+    _watchDeparture();
     ref.invalidate(myTripsProvider);
   }
 
@@ -79,38 +111,44 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
     if (mounted && updatedTrip != null) _refreshTrip(updatedTrip);
   }
 
-  Future<void> _cancelTrip(BuildContext themedContext) async {
-    if (_cancelling || !trip.isUpcoming(DateTime.now())) return;
-    setState(() => _cancelling = true);
+  Future<void> _confirmStatusChange(
+    BuildContext themedContext, {
+    required String action,
+    required String confirmation,
+    required Future<Trip> Function(String id) changeStatus,
+    String dismissLabel = 'Retour',
+    String? description,
+  }) async {
+    if (_changingStatus) return;
+    setState(() => _changingStatus = true);
     try {
       final confirmed = await showDialog<bool>(
         context: themedContext,
         builder: (context) => AlertDialog(
-          title: const Text('Annuler le trajet ?'),
-          content:
-              const Text('Le trajet restera visible dans les trajets annulés.'),
+          title: Text('$action ?'),
+          content: description == null ? null : Text(description),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Conserver le trajet')),
+                child: Text(dismissLabel)),
             FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Confirmer l’annulation')),
+                child: Text(confirmation)),
           ],
         ),
       );
       if (!mounted || confirmed != true) return;
-      final updatedTrip =
-          await ref.read(tripRepositoryProvider).cancel(trip.id);
+      final updatedTrip = await changeStatus(trip.id);
       if (mounted) _refreshTrip(updatedTrip);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Annulation impossible. Réessayez.')),
+          const SnackBar(
+              content: Text('Changement de statut impossible. Réessayez.')),
         );
       }
     } finally {
-      if (mounted) setState(() => _cancelling = false);
+      if (mounted) setState(() => _changingStatus = false);
     }
   }
 
@@ -146,7 +184,7 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 TripCircleButton(
-                                  tooltip: 'Retour aux trajets',
+                                  tooltip: widget.backTooltip,
                                   onPressed: () => Navigator.maybePop(context),
                                   child: const Icon(Icons.chevron_left),
                                 ),
@@ -261,16 +299,60 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                             Row(children: [
                               Expanded(
                                   child: OutlinedButton(
-                                      onPressed: _cancelling ? null : _editTrip,
+                                      onPressed:
+                                          _changingStatus ? null : _editTrip,
                                       child: const Text('Modifier'))),
                               const SizedBox(width: 10),
                               Expanded(
                                   child: OutlinedButton(
-                                      onPressed: _cancelling
+                                      onPressed: _changingStatus
                                           ? null
-                                          : () => _cancelTrip(context),
+                                          : () => _confirmStatusChange(
+                                                context,
+                                                action: 'Annuler le trajet',
+                                                confirmation:
+                                                    'Confirmer l’annulation',
+                                                dismissLabel:
+                                                    'Conserver le trajet',
+                                                description:
+                                                    'Le trajet restera visible dans les trajets annulés.',
+                                                changeStatus: ref
+                                                    .read(
+                                                        tripRepositoryProvider)
+                                                    .cancel,
+                                              ),
                                       child: const Text('Annuler le trajet'))),
                             ]),
+                          ],
+                          if (trip.canStart(now) ||
+                              trip.status == TripStatus.inProgress) ...[
+                            const SizedBox(height: 14),
+                            FilledButton(
+                              onPressed: _changingStatus
+                                  ? null
+                                  : () {
+                                      final starting =
+                                          trip.canStart(DateTime.now());
+                                      final action = starting
+                                          ? 'Démarrer le trajet'
+                                          : 'Terminer le trajet';
+                                      final repository =
+                                          ref.read(tripRepositoryProvider);
+                                      _confirmStatusChange(
+                                        context,
+                                        action: action,
+                                        confirmation: starting
+                                            ? 'Confirmer le démarrage'
+                                            : 'Confirmer la fin du trajet',
+                                        changeStatus: starting
+                                            ? repository.start
+                                            : repository.complete,
+                                      );
+                                    },
+                              child: Text(trip.status == TripStatus.inProgress
+                                  ? 'Terminer le trajet'
+                                  : 'Démarrer le trajet'),
+                            ),
                           ],
                         ],
                       ),

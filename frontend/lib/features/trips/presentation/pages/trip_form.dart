@@ -638,9 +638,25 @@ class _TripFormState extends ConsumerState<TripForm>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    TripNote(widget.isPreview
-                                        ? 'Aperçu local'
-                                        : 'Publication'),
+                                    Expanded(
+                                        child: Row(children: [
+                                      if (Navigator.canPop(context)) ...[
+                                        TripCircleButton(
+                                          tooltip: 'Retour',
+                                          onPressed: _saving
+                                              ? null
+                                              : () =>
+                                                  Navigator.maybePop(context),
+                                          child: const Icon(Icons.chevron_left),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Flexible(
+                                          child: TripNote(widget.isPreview
+                                              ? 'Aperçu local'
+                                              : 'Publication')),
+                                    ])),
+                                    const SizedBox(width: 8),
                                     TripPill(
                                         editing ? 'Modification' : 'Brouillon'),
                                   ])),

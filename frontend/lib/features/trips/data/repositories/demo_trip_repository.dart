@@ -35,11 +35,32 @@ class DemoTripRepository implements TripRepository {
   @override
   Future<Trip> cancel(String id) async {
     final index = _editableTripIndex(id, DateTime.now());
-    return _trips[index] = Trip(
-      id: id,
-      details: _trips[index].details,
-      status: TripStatus.cancelled,
-    );
+    return _setStatus(index, TripStatus.cancelled);
+  }
+
+  @override
+  Future<Trip> start(String id) async {
+    final index = _trips.indexWhere((trip) => trip.id == id);
+    if (index < 0 || !_trips[index].canStart(DateTime.now())) {
+      throw StateError('Ce trajet ne peut pas être démarré.');
+    }
+    return _setStatus(index, TripStatus.inProgress);
+  }
+
+  @override
+  Future<Trip> complete(String id) async {
+    final index = _trips.indexWhere((trip) => trip.id == id);
+    if (index < 0 || _trips[index].status != TripStatus.inProgress) {
+      throw StateError('Seul un trajet en cours peut être terminé.');
+    }
+    return _setStatus(index, TripStatus.completed);
+  }
+
+  Trip _setStatus(int index, TripStatus status) {
+    final trip = _trips[index];
+    final updated = Trip(id: trip.id, details: trip.details, status: status);
+    _trips[index] = updated;
+    return updated;
   }
 
   @override

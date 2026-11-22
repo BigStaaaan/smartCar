@@ -4,6 +4,8 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../trips/domain/entities/trip.dart';
+import '../../../trips/presentation/pages/trip_details_page.dart';
 import '../widgets/driver_avatar.dart';
 
 const _cream = Color(0xffeee7d7);
@@ -19,7 +21,9 @@ class DriverDashboardPage extends StatefulWidget {
     this.onPublish,
     this.onTripDetails,
     this.onProfile,
-    this.onRequests,
+    this.onTrips,
+    this.onVehicles,
+    this.tripOverview,
     this.driverPhotoUrl,
     this.firstRiderPhotoUrl,
     this.secondRiderPhotoUrl,
@@ -28,7 +32,14 @@ class DriverDashboardPage extends StatefulWidget {
   final VoidCallback? onPublish;
   final VoidCallback? onTripDetails;
   final VoidCallback? onProfile;
-  final VoidCallback? onRequests;
+  final VoidCallback? onTrips;
+  final VoidCallback? onVehicles;
+  final ({
+    Trip? featured,
+    int upcoming,
+    int inProgress,
+    int completed
+  })? tripOverview;
   final String? driverPhotoUrl;
   final String? firstRiderPhotoUrl;
   final String? secondRiderPhotoUrl;
@@ -53,7 +64,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
 
   late final DateTime _demoCountdownEnd;
   late final Timer _timer;
-  final _countdown = ValueNotifier(const Duration(hours: 2, minutes: 14));
+  final _clock = ValueNotifier(DateTime.now());
 
   late final _entrance = AnimationController(
     vsync: this,
@@ -73,11 +84,9 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
   @override
   void initState() {
     super.initState();
-    _demoCountdownEnd = DateTime.now().add(_countdown.value);
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final remaining = _demoCountdownEnd.difference(DateTime.now());
-      _countdown.value = remaining.isNegative ? Duration.zero : remaining;
-      if (_countdown.value == Duration.zero) timer.cancel();
+    _demoCountdownEnd = _clock.value.add(const Duration(hours: 2, minutes: 14));
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _clock.value = DateTime.now();
     });
   }
 
@@ -101,7 +110,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
   @override
   void dispose() {
     _timer.cancel();
-    _countdown.dispose();
+    _clock.dispose();
     _entrance.dispose();
     _route.dispose();
     _ambient.dispose();
@@ -187,6 +196,22 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                 SafeArea(
                   child: Builder(builder: (context) {
                     final text = Theme.of(context).textTheme;
+                    final overview = widget.tripOverview;
+                    final featured = overview?.featured;
+                    final details = featured?.details;
+                    final contribution = details?.contributionDh;
+                    final price = overview == null
+                        ? '$_fare DH / place'
+                        : (contribution == null || contribution == 0
+                            ? 'Gratuit'
+                            : '$contribution DH / place');
+                    final metrics = overview == null
+                        ? _metrics
+                        : [
+                            ('À venir', overview.upcoming.toDouble()),
+                            ('En cours', overview.inProgress.toDouble()),
+                            ('Terminés', overview.completed.toDouble()),
+                          ];
                     return Stack(
                       children: [
                         ListView(
@@ -215,126 +240,166 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                   ],
                                 )),
                             const SizedBox(height: 20),
-                            _reveal(
-                                1,
-                                Text('Ton prochain départ dans',
-                                    style: text.bodyMedium)),
-                            _reveal(
-                                2,
-                                ValueListenableBuilder<Duration>(
-                                  valueListenable: _countdown,
-                                  builder: (_, duration, child) {
-                                    final minutes = (duration.inMinutes % 60)
-                                        .toString()
-                                        .padLeft(2, '0');
-                                    final seconds = (duration.inSeconds % 60)
-                                        .toString()
-                                        .padLeft(2, '0');
-                                    return FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        '${duration.inHours}:$minutes:$seconds',
-                                        style: display.copyWith(fontSize: 84),
-                                      ),
-                                    );
-                                  },
-                                )),
-                            const SizedBox(height: 18),
-                            _reveal(
-                                3,
-                                _Card(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Wrap(
-                                        alignment: WrapAlignment.spaceBetween,
+                            if (overview == null || featured != null) ...[
+                              _reveal(
+                                  2,
+                                  ValueListenableBuilder<DateTime>(
+                                    valueListenable: _clock,
+                                    builder: (_, now, child) {
+                                      if (featured != null &&
+                                          !featured.isUpcoming(now)) {
+                                        return Text(
+                                            tripStatusLabel(featured, now),
+                                            style:
+                                                display.copyWith(fontSize: 46));
+                                      }
+                                      final remaining = (details?.departureAt ??
+                                              _demoCountdownEnd)
+                                          .difference(now);
+                                      final duration = remaining.isNegative
+                                          ? Duration.zero
+                                          : remaining;
+                                      final minutes = (duration.inMinutes % 60)
+                                          .toString()
+                                          .padLeft(2, '0');
+                                      final seconds = (duration.inSeconds % 60)
+                                          .toString()
+                                          .padLeft(2, '0');
+                                      return Column(
                                         crossAxisAlignment:
-                                            WrapCrossAlignment.center,
-                                        spacing: 8,
-                                        runSpacing: 6,
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          const _Pill('Demain · 08:00'),
-                                          Text('$_fare DH / place',
-                                              style: text.titleSmall?.copyWith(
-                                                  fontWeight: FontWeight.w800)),
-                                        ],
-                                      ),
-                                      SizedBox(
-                                        height: 84,
-                                        child: CustomPaint(
-                                            painter: _RoutePainter(_route)),
-                                      ),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                              child: Text(_origin,
-                                                  style: text.titleSmall
-                                                      ?.copyWith(
-                                                          fontWeight: FontWeight
-                                                              .w800))),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                              child: Text(_destination,
-                                                  textAlign: TextAlign.end,
-                                                  style: text.titleSmall
-                                                      ?.copyWith(
-                                                          fontWeight: FontWeight
-                                                              .w800))),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Wrap(
-                                        alignment: WrapAlignment.spaceBetween,
-                                        crossAxisAlignment:
-                                            WrapCrossAlignment.center,
-                                        spacing: 10,
-                                        runSpacing: 6,
-                                        children: [
-                                          SizedBox(
-                                            width: 62,
-                                            height: 36,
-                                            child: Stack(children: [
-                                              DriverAvatar('S',
-                                                  photoUrl:
-                                                      widget.firstRiderPhotoUrl,
-                                                  background: _blue),
-                                              Positioned(
-                                                  left: 26,
-                                                  child: DriverAvatar('O',
-                                                      photoUrl: widget
-                                                          .secondRiderPhotoUrl)),
-                                            ]),
-                                          ),
-                                          Text('$_availableSeats places libres',
-                                              style: text.bodySmall),
-                                          if (widget.onTripDetails
-                                              case final openDetails?)
-                                            FilledButton(
-                                              style: FilledButton.styleFrom(
-                                                  backgroundColor: _olive,
-                                                  foregroundColor: _cream),
-                                              onPressed: openDetails,
-                                              child:
-                                                  const Text('Voir le trajet'),
+                                          Text('Ton prochain départ dans',
+                                              style: text.bodyMedium),
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              '${duration.inHours}:$minutes:$seconds',
+                                              style: display.copyWith(
+                                                  fontSize: 84),
                                             ),
+                                          ),
                                         ],
-                                      ),
-                                    ],
-                                  ),
-                                )),
+                                      );
+                                    },
+                                  )),
+                              const SizedBox(height: 18),
+                              _reveal(
+                                  3,
+                                  _Card(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Wrap(
+                                          alignment: WrapAlignment.spaceBetween,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          spacing: 8,
+                                          runSpacing: 6,
+                                          children: [
+                                            _Pill(details == null
+                                                ? 'Demain · 08:00'
+                                                : tripDateLabel(
+                                                    details.departureAt)),
+                                            Text(price,
+                                                style: text.titleSmall
+                                                    ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w800)),
+                                          ],
+                                        ),
+                                        SizedBox(
+                                          height: 84,
+                                          child: CustomPaint(
+                                              painter: _RoutePainter(_route)),
+                                        ),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                                child: Text(
+                                                    details?.origin ?? _origin,
+                                                    style: text.titleSmall
+                                                        ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w800))),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                                child: Text(
+                                                    details?.destination ??
+                                                        _destination,
+                                                    textAlign: TextAlign.end,
+                                                    style: text.titleSmall
+                                                        ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w800))),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Wrap(
+                                          alignment: WrapAlignment.spaceBetween,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          spacing: 10,
+                                          runSpacing: 6,
+                                          children: [
+                                            if (overview == null)
+                                              SizedBox(
+                                                width: 62,
+                                                height: 36,
+                                                child: Stack(children: [
+                                                  DriverAvatar('S',
+                                                      photoUrl: widget
+                                                          .firstRiderPhotoUrl,
+                                                      background: _blue),
+                                                  Positioned(
+                                                      left: 26,
+                                                      child: DriverAvatar('O',
+                                                          photoUrl: widget
+                                                              .secondRiderPhotoUrl)),
+                                                ]),
+                                              ),
+                                            Text(
+                                                details == null
+                                                    ? '$_availableSeats places libres'
+                                                    : '${details.seats} place${details.seats == 1 ? '' : 's'} proposée${details.seats == 1 ? '' : 's'}',
+                                                style: text.bodySmall),
+                                            if (widget.onTripDetails
+                                                case final openDetails?)
+                                              FilledButton(
+                                                style: FilledButton.styleFrom(
+                                                    backgroundColor: _olive,
+                                                    foregroundColor: _cream),
+                                                onPressed: openDetails,
+                                                child: const Text(
+                                                    'Voir le trajet'),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  )),
+                            ] else
+                              const _Card(
+                                  child: Text(
+                                      'Aucun trajet prêt, à venir ou en cours')),
                             const SizedBox(height: 14),
                             _reveal(
                                 4,
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    for (final (label, value) in _metrics)
+                                    for (final (index, (label, value))
+                                        in metrics.indexed)
                                       Expanded(
                                         child: Padding(
                                           padding: EdgeInsets.only(
-                                              right: label == 'Note' ? 0 : 8),
+                                              right: index == metrics.length - 1
+                                                  ? 0
+                                                  : 8),
                                           child: _Metric(
                                               label: label,
                                               value: value,
@@ -358,7 +423,8 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                           child: _BottomBar(
                               onPublish: widget.onPublish,
                               onProfile: widget.onProfile,
-                              onRequests: widget.onRequests),
+                              onTrips: widget.onTrips,
+                              onVehicles: widget.onVehicles),
                         ),
                       ],
                     );
@@ -481,11 +547,13 @@ class _Pill extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({this.onPublish, this.onProfile, this.onRequests});
+  const _BottomBar(
+      {this.onPublish, this.onProfile, this.onTrips, this.onVehicles});
 
   final VoidCallback? onPublish;
   final VoidCallback? onProfile;
-  final VoidCallback? onRequests;
+  final VoidCallback? onTrips;
+  final VoidCallback? onVehicles;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -509,15 +577,16 @@ class _BottomBar extends StatelessWidget {
                         label: 'Accueil',
                         selected: true),
                     _BarItem(
-                        icon: Icons.inbox_outlined,
-                        label: 'Demandes',
-                        onTap: onRequests),
+                        icon: Icons.alt_route_outlined,
+                        label: 'Trajets',
+                        onTap: onTrips),
                     const Spacer(),
-                    const _BarItem(icon: Icons.show_chart, label: 'Prévu'),
                     _BarItem(
-                        icon: Icons.person_outline,
-                        label: 'Profil',
-                        onTap: onProfile),
+                        icon: onVehicles == null
+                            ? Icons.person_outline
+                            : Icons.directions_car_outlined,
+                        label: onVehicles == null ? 'Profil' : 'Véhicules',
+                        onTap: onVehicles ?? onProfile),
                   ],
                 ),
               ),
