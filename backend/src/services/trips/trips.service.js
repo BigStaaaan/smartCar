@@ -66,4 +66,12 @@ function start(ownerId, id) {
   return tripsRepository.setStatus(ownerId, id, 'in_progress');
 }
 
-module.exports = { publish, update, cancel, start };
+function complete(ownerId, id) {
+  const trip = findOwnedTrip(ownerId, id);
+  if (trip.status !== 'in_progress') {
+    throw tripError(409, 'Only trips in progress can be completed');
+  }
+  return tripsRepository.setStatus(ownerId, id, 'completed');
+}
+
+module.exports = { publish, update, cancel, start, complete };

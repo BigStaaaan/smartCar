@@ -1,7 +1,7 @@
 jest.mock('../src/config/firebase', () => ({
   auth: () => ({
     async verifyIdToken(token) {
-      if (!['driver-a', 'driver-b', 'driver-empty', 'driver-closed'].includes(token)) {
+      if (!['driver-a', 'driver-b', 'driver-empty', 'driver-closed', 'driver-complete'].includes(token)) {
         throw new Error('Invalid token');
       }
       return { uid: token };
@@ -38,6 +38,19 @@ jest.mock('../src/repositories/trips/trips.repository', () => {
           seats: 1,
         },
       },
+      ...['trip-to-complete', 'trip-private-active'].map((id) => ({
+        id,
+        ownerId: 'driver-complete',
+        status: 'in_progress',
+        details: {
+          origin: 'Gare',
+          destination: 'Campus',
+          departureAt: '2099-03-05T09:00:00.000Z',
+          vehicleId: 'vehicle-complete',
+          seats: 2,
+          contributionDh: 15,
+        },
+      })),
       ...[
         ['trip-completed', 'completed'],
         ['trip-cancelled', 'cancelled'],
@@ -444,4 +457,66 @@ test('rejects fields in the start request body', async () => {
     expect((await startTrip(original.id, 'driver-a', body)).status).toBe(400);
   }
   expect((await get('/' + original.id)).data).toEqual(original);
+});
+
+function completeTrip(id, token, body) {
+  return tripAction('complete', id, token, body);
+}
+
+test('completes an in-progress trip and preserves its details in both GET routes', async () => {
+  const owner = 'driver-complete';
+  const id = 'trip-to-complete';
+  const original = await get('/' + id, owner);
+  expect(original.data.status).toBe('in_progress');
+
+  const completed = await completeTrip(id, owner);
+  expect(completed.status).toBe(200);
+  expect(completed.data).toEqual({ ...original.data, status: 'completed' });
+  expect((await get('/' + id, owner)).data).toEqual(completed.data);
+  expect((await get('', owner)).data).toContainEqual(completed.data);
+  expect((await completeTrip(id, owner)).status).toBe(409);
+  expect((await get('/' + id, owner)).data).toEqual(completed.data);
+});
+
+test('requires authentication and hides another driver’s trip on completion', async () => {
+  const owner = 'driver-complete';
+  const id = 'trip-private-active';
+  const original = await get('/' + id, owner);
+  expect(original.data.status).toBe('in_progress');
+  expect((await completeTrip(id, null)).status).toBe(401);
+  expect((await completeTrip(id, 'invalid')).status).toBe(401);
+
+  const foreign = await completeTrip(id, 'driver-a');
+  const missing = await completeTrip('missing', 'driver-a');
+  expect(foreign.status).toBe(404);
+  expect(foreign).toEqual(missing);
+  expect((await get('/' + id, owner)).data).toEqual(original.data);
+});
+
+test('rejects completing a trip that is still published', async () => {
+  const original = await publishedTrip();
+  expect((await completeTrip(original.id)).status).toBe(409);
+  expect((await get('/' + original.id)).data).toEqual(original);
+});
+
+test.each(['trip-completed', 'trip-cancelled'])(
+  'rejects completing an ineligible trip (%s)', async (id) => {
+    const owner = 'driver-closed';
+    const original = await get('/' + id, owner);
+    expect(original.status).toBe(200);
+    expect((await completeTrip(id, owner, {})).status).toBe(409);
+    expect((await get('/' + id, owner)).data).toEqual(original.data);
+  },
+);
+
+test('rejects fields in the completion request body', async () => {
+  const owner = 'driver-complete';
+  const id = 'trip-private-active';
+  const original = await get('/' + id, owner);
+  expect(original.data.status).toBe('in_progress');
+
+  for (const body of [{ status: 'completed' }, { ownerId: 'driver-a' }, { seats: 1 }]) {
+    expect((await completeTrip(id, owner, body)).status).toBe(400);
+  }
+  expect((await get('/' + id, owner)).data).toEqual(original.data);
 });

@@ -18,5 +18,6 @@ router.post('/', validate(schemas.create), asyncHandler(controller.create));
 router.patch('/:id', validate(schemas.update), asyncHandler(controller.update));
 router.patch('/:id/cancel', validate(schemas.emptyAction), asyncHandler(controller.cancel));
 router.patch('/:id/start', validate(schemas.emptyAction), asyncHandler(controller.start));
+router.patch('/:id/complete', validate(schemas.emptyAction), asyncHandler(controller.complete));
 
 module.exports = router;

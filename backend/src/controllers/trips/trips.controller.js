@@ -42,4 +42,9 @@ async function start(req, res) {
   return res.status(200).json(tripResponse(trip));
 }
 
-module.exports = { list, get, create, update, cancel, start };
+async function complete(req, res) {
+  const trip = await service.complete(req.user.uid, req.params.id);
+  return res.status(200).json(tripResponse(trip));
+}
+
+module.exports = { list, get, create, update, cancel, start, complete };
