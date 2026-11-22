@@ -1,5 +1,7 @@
 const { tripsRepository } = require('../../repositories/trips/trips.repository');
 
+const service = require('../../services/trips/trips.service');
+
 function tripResponse(trip) {
   const { origin, destination, departureAt, vehicleId, seats, contributionDh } = trip.details;
   return {
@@ -20,4 +22,9 @@ async function get(req, res) {
   return res.json(tripResponse(trip));
 }
 
-module.exports = { list, get };
+async function create(req, res) {
+  const trip = await service.publish(req.user.uid, req.body);
+  return res.status(201).json(tripResponse(trip));
+}
+
+module.exports = { list, get, create };
