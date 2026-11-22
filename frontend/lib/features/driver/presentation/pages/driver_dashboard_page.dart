@@ -536,11 +536,12 @@ class _Pill extends StatelessWidget {
               ),
               const SizedBox(width: 6),
             ],
-            Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            Flexible(
+                child: Text(label,
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelSmall
+                        ?.copyWith(fontWeight: FontWeight.w600))),
           ],
         ),
       );
