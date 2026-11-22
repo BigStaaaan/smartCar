@@ -32,4 +32,9 @@ async function update(req, res) {
   return res.json(tripResponse(trip));
 }
 
-module.exports = { list, get, create, update };
+async function cancel(req, res) {
+  const trip = await service.cancel(req.user.uid, req.params.id);
+  return res.status(200).json(tripResponse(trip));
+}
+
+module.exports = { list, get, create, update, cancel };

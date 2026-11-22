@@ -28,13 +28,17 @@ function publish(ownerId, details) {
   });
 }
 
-function update(ownerId, id, changes) {
+function findUpcomingTrip(ownerId, id, action) {
   const trip = tripsRepository.find(ownerId, id);
   if (!trip) throw tripError(404, 'Trip not found');
   if (trip.status !== 'published' || Date.parse(trip.details.departureAt) <= Date.now()) {
-    throw tripError(409, 'Only published trips with a future departure can be modified');
+    throw tripError(409, `Only published trips with a future departure can be ${action}`);
   }
+  return trip;
+}
 
+function update(ownerId, id, changes) {
+  const trip = findUpcomingTrip(ownerId, id, 'modified');
   const details = { ...trip.details, ...changes };
   validateTripDetails(ownerId, details);
   return tripsRepository.update(ownerId, id, {
@@ -43,4 +47,9 @@ function update(ownerId, id, changes) {
   });
 }
 
-module.exports = { publish, update };
+function cancel(ownerId, id) {
+  findUpcomingTrip(ownerId, id, 'cancelled');
+  return tripsRepository.setStatus(ownerId, id, 'cancelled');
+}
+
+module.exports = { publish, update, cancel };

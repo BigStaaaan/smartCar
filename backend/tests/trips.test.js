@@ -333,3 +333,49 @@ test.each([
   expect(result.status).toBe(409);
   expect((await get('/' + id, owner)).data).toEqual(original.data);
 });
+
+function cancelTrip(id, token = 'driver-a', body) {
+  return request('PATCH', '/' + id + '/cancel', token, body);
+}
+
+test('cancels an upcoming trip, keeps its details and exposes its status through GET', async () => {
+  const original = await publishedTrip();
+  const result = await cancelTrip(original.id);
+  expect(result.status).toBe(200);
+  expect(result.data).toEqual({ ...original, status: 'cancelled' });
+  expect((await get('/' + original.id)).data).toEqual(result.data);
+  expect((await get()).data).toContainEqual(result.data);
+  expect((await cancelTrip(original.id)).status).toBe(409);
+  expect((await get('/' + original.id)).data).toEqual(result.data);
+});
+
+test('requires authentication and returns the same 404 for foreign and missing trips', async () => {
+  const original = await publishedTrip();
+  expect((await cancelTrip(original.id, null)).status).toBe(401);
+  expect((await cancelTrip(original.id, 'invalid')).status).toBe(401);
+  const foreign = await cancelTrip(original.id, 'driver-b');
+  const missing = await cancelTrip('missing', 'driver-b');
+  expect(foreign.status).toBe(404);
+  expect(foreign).toEqual(missing);
+  expect((await get('/' + original.id)).data).toEqual(original);
+});
+
+test.each([
+  ['trip-b', 'driver-b'],
+  ['trip-completed', 'driver-closed'],
+  ['trip-cancelled', 'driver-closed'],
+  ['trip-due', 'driver-closed'],
+])('refuses cancellation based on the trip status or date for %s', async (id, owner) => {
+  const original = await get('/' + id, owner);
+  expect(original.status).toBe(200);
+  expect((await cancelTrip(id, owner, {})).status).toBe(409);
+  expect((await get('/' + id, owner)).data).toEqual(original.data);
+});
+
+test('rejects attempts to change the trip through the cancellation body', async () => {
+  const original = await publishedTrip();
+  for (const body of [{ status: 'cancelled' }, { ownerId: 'driver-b' }, { origin: 'Centre' }]) {
+    expect((await cancelTrip(original.id, 'driver-a', body)).status).toBe(400);
+  }
+  expect((await get('/' + original.id)).data).toEqual(original);
+});

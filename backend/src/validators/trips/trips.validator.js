@@ -25,4 +25,6 @@ const create = fields.fork(
 );
 const update = fields.min(1);
 
-module.exports = { create, update };
+const cancel = Joi.object({}).unknown(false);
+
+module.exports = { create, update, cancel };

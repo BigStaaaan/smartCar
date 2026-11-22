@@ -26,7 +26,15 @@ function createTripsRepository(initialTrips = []) {
     return updated;
   }
 
-  return { list, find, create, update };
+  function setStatus(ownerId, id, status) {
+    const trip = find(ownerId, id);
+    if (!trip) return undefined;
+    const updated = { ...trip, status };
+    trips.set(id, updated);
+    return updated;
+  }
+
+  return { list, find, create, update, setStatus };
 }
 
 module.exports = { createTripsRepository, tripsRepository: createTripsRepository() };
