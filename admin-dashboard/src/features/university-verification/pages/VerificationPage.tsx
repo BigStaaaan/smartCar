@@ -19,6 +19,7 @@ type Request = {
 export default function VerificationPage() {
   const [status, setStatus] = useState('PENDING');
   const [requests, setRequests] = useState<Request[]>([]);
+  const [allRequests, setAllRequests] = useState<Request[]>([]);
   const [selected, setSelected] = useState<Request | null>(null);
   const [cardUrl, setCardUrl] = useState('');
   const [reason, setReason] = useState('');
@@ -28,11 +29,21 @@ export default function VerificationPage() {
   async function loadRequests(nextStatus = status) {
     setLoading(true);
     try {
-      const response = await api.get(`/verification/admin/requests`, {
-        params: nextStatus === 'ALL' ? undefined : { status: nextStatus },
+      const response = await api.get('/verification/admin/requests', {
+        params: { status: 'ALL' },
       });
-      setRequests(response.data.requests);
-      setSelected(null);
+      const all = (response.data.requests as Request[]) ?? [];
+      setAllRequests(all);
+      const visible =
+        nextStatus === 'ALL'
+          ? all
+          : all.filter((request) => request.status === nextStatus);
+      setRequests(visible);
+      setSelected((current) =>
+        visible.find((request) =>
+          request.firebaseUid === current?.firebaseUid,
+        ) ?? visible[0] ?? null,
+      );
       setCardUrl('');
     } catch {
       setMessage('Unable to load verification requests.');
@@ -93,24 +104,49 @@ export default function VerificationPage() {
     if (cardUrl) URL.revokeObjectURL(cardUrl);
   }, [cardUrl]);
 
+  useEffect(() => {
+    if (selected) openRequest(selected);
+  }, [selected?.firebaseUid]);
+
   return (
     <section className="verification-page">
-      <div className="verification-toolbar">
-        <label>
-          Status
+      <div className="verification-heading">
+        <div>
+          <p className="verification-eyebrow">University operations</p>
+          <h1>Student verification</h1>
+        </div>
+        <label className="status-filter">
+          <span>Status</span>
           <select value={status} onChange={(event) => setStatus(event.target.value)}>
-            <option value="PENDING">Pending</option>
+            <option value="PENDING">Pending review</option>
             <option value="APPROVED">Approved</option>
             <option value="REJECTED">Rejected</option>
             <option value="REQUIRES_RESUBMISSION">Resubmission</option>
             <option value="ALL">All requests</option>
           </select>
         </label>
-        <span>{loading ? 'Loading...' : `${requests.length} requests`}</span>
+      </div>
+      <div className="verification-summary" aria-label="Verification queue summary">
+        <div>
+          <span>Pending</span>
+          <strong>{allRequests.filter((item) => item.status === 'PENDING').length}</strong>
+        </div>
+        <div>
+          <span>Approved</span>
+          <strong>{allRequests.filter((item) => item.status === 'APPROVED').length}</strong>
+        </div>
+        <div>
+          <span>Rejected</span>
+          <strong>{allRequests.filter((item) => item.status === 'REJECTED').length}</strong>
+        </div>
       </div>
       {message && <p className="verification-message">{message}</p>}
       <div className="verification-grid">
         <div className="request-list">
+          <div className="request-list-header">
+            <span>{status === 'ALL' ? 'All requests' : status === 'PENDING' ? 'Pending review' : status.toLowerCase()}</span>
+            <strong>{loading ? '—' : requests.length}</strong>
+          </div>
           {requests.map((request) => (
             <button
               type="button"
