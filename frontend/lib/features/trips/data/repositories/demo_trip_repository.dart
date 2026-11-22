@@ -29,7 +29,11 @@ class DemoTripRepository implements TripRepository {
     if (!details.departureAt.isAfter(now)) {
       throw ArgumentError('Le départ doit être dans le futur.');
     }
-    return _trips[index] = Trip(id: id, details: details);
+    return _trips[index] = Trip(
+      id: id,
+      details: details,
+      confirmedPassengerNames: _trips[index].confirmedPassengerNames,
+    );
   }
 
   @override
@@ -58,7 +62,12 @@ class DemoTripRepository implements TripRepository {
 
   Trip _setStatus(int index, TripStatus status) {
     final trip = _trips[index];
-    final updated = Trip(id: trip.id, details: trip.details, status: status);
+    final updated = Trip(
+      id: trip.id,
+      details: trip.details,
+      status: status,
+      confirmedPassengerNames: trip.confirmedPassengerNames,
+    );
     _trips[index] = updated;
     return updated;
   }
