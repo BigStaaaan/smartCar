@@ -117,8 +117,10 @@ void main() {
 
     expect(find.byType(RegisterPage), findsOneWidget);
     expect(find.text('SmartCar'), findsOneWidget);
-    expect(find.text('Student'), findsOneWidget);
-    expect(find.text('Staff'), findsOneWidget);
-    expect(find.text('Create Student Account'), findsOneWidget);
+    expect(find.text('Student'), findsNothing);
+    expect(find.text('Staff'), findsNothing);
+    expect(find.text('Passenger'), findsNothing);
+    expect(find.text('Driver'), findsNothing);
+    expect(find.text('Create Account'), findsOneWidget);
   });
 }

@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/validators/email_validator.dart';
 import '../../../../core/validators/required_validator.dart';
+import '../../../../core/widgets/auth_error_dialog.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../email_verification/presentation/pages/email_verification_page.dart';
 import '../providers/auth_provider.dart';
@@ -22,9 +26,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String _university = 'Faculté des Sciences d’Agadir';
-  String _accountType = 'STUDENT';
   bool _obscurePassword = true;
   bool _acceptedTerms = false;
+  XFile? _studentCard;
+  bool _isPickingStudentCard = false;
 
   @override
   void dispose() {
@@ -52,22 +57,73 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return 'Strong';
   }
 
+  Future<Map<String, String>> _studentCardPayload() async {
+    final card = _studentCard;
+    if (card == null) return <String, String>{};
+    final bytes = await card.readAsBytes();
+    return <String, String>{
+      'studentCard': base64Encode(bytes),
+      'studentCardName': card.name,
+      'studentCardMimeType': card.mimeType ?? 'image/jpeg',
+    };
+  }
+
+  Future<void> _pickStudentCard() async {
+    setState(() => _isPickingStudentCard = true);
+    try {
+      final card = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
+      if (!mounted) return;
+      if (card == null) return;
+      final bytes = await card.readAsBytes();
+      if (!mounted) return;
+      if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+        await showAuthErrorDialog(
+          context,
+          'Votre carte étudiant doit faire moins de 5 MB.',
+          title: 'Image trop volumineuse',
+        );
+        return;
+      }
+      setState(() => _studentCard = card);
+    } finally {
+      if (mounted) setState(() => _isPickingStudentCard = false);
+    }
+  }
+
   Future<void> _handleSignUp() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
+    if (_studentCard == null) {
+      await showAuthErrorDialog(
+        context,
+        'Ajoutez une photo de votre carte étudiant pour envoyer la demande de vérification.',
+        title: 'Carte étudiant requise',
+      );
+      return;
+    }
     if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please accept the carpool guidelines')),
+      await showAuthErrorDialog(
+        context,
+        'Vous devez accepter les règles de covoiturage avant de créer votre compte.',
+        title: 'Conditions requises',
       );
       return;
     }
 
+    final cardPayload = await _studentCardPayload();
     final success = await ref.read(authProvider.notifier).signUpWithEmail(
           fullName: _nameController.text.trim(),
           university: _university,
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          accountType: _accountType,
+          accountType:
+              EmailValidator.getAccountType(_emailController.text) ??
+                  'STUDENT',
+          studentCardPayload: cardPayload,
         );
     if (!mounted) return;
     if (success) {
@@ -79,17 +135,27 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } else {
       final message =
           ref.read(authProvider).errorMessage ?? 'Account creation failed.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-        ),
+      await showAuthErrorDialog(
+        context,
+        message,
+        title: 'Création du compte impossible',
       );
     }
   }
 
   Future<void> _handleGoogleSignUp() async {
-    final success = await ref.read(authProvider.notifier).signInWithGoogle();
+    if (_studentCard == null) {
+      await showAuthErrorDialog(
+        context,
+        'Ajoutez une photo de votre carte étudiant avant de continuer.',
+        title: 'Carte étudiant requise',
+      );
+      return;
+    }
+    final cardPayload = await _studentCardPayload();
+    final success = await ref
+        .read(authProvider.notifier)
+        .signInWithGoogle(studentCardPayload: cardPayload);
     if (!mounted) return;
     if (success) {
       Navigator.of(context).pushReplacement(
@@ -98,11 +164,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } else {
       final message =
           ref.read(authProvider).errorMessage ?? 'Google Sign-In failed.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-        ),
+      await showAuthErrorDialog(
+        context,
+        message,
+        title: 'Connexion Google impossible',
       );
     }
   }
@@ -298,32 +363,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _RoleButton(
-                                    label: 'Student',
-                                    detail: '(Étudiant)',
-                                    icon: Icons.school_outlined,
-                                    selected: _accountType == 'STUDENT',
-                                    onTap: () => setState(
-                                        () => _accountType = 'STUDENT'),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: _RoleButton(
-                                    label: 'Staff',
-                                    detail: '(Personnel)',
-                                    icon: Icons.badge_outlined,
-                                    selected: _accountType == 'STAFF',
-                                    onTap: () =>
-                                        setState(() => _accountType = 'STAFF'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
                             _fieldLabel('Full Legal Name'),
                             const SizedBox(height: 5),
                             Container(
@@ -451,10 +490,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               decoration: _fieldBox,
                               child: TextFormField(
                                 controller: _emailController,
-                                validator: (value) => EmailValidator.validate(
-                                  value,
-                                  accountType: _accountType,
-                                ),
+                                validator: EmailValidator.validate,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: _inputDecoration(
                                   hint: 'usr.name@university.edu',
@@ -521,6 +557,93 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                     ),
                                   ),
                               ],
+                            ),
+                            const SizedBox(height: 12),
+                            _fieldLabel('Student Card', trailing: 'required'),
+                            const SizedBox(height: 5),
+                            InkWell(
+                              onTap:
+                                  _isPickingStudentCard ? null : _pickStudentCard,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                width: double.infinity,
+                                height: 68,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: _studentCard == null
+                                        ? AppColors.outlineVariant
+                                        : AppColors.brandIndigo,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryFixed,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: _isPickingStudentCard
+                                          ? const Padding(
+                                              padding: EdgeInsets.all(12),
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Icon(
+                                              _studentCard == null
+                                                  ? Icons.upload_rounded
+                                                  : Icons.check_circle_rounded,
+                                              color: AppColors.brandIndigo,
+                                            ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _studentCard == null
+                                                ? 'Upload student card'
+                                                : _studentCard!.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: AppTypography.labelSm
+                                                .copyWith(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _studentCard == null
+                                                ? 'JPG, PNG or WEBP - max 5 MB'
+                                                : 'Ready for admin review',
+                                            style: AppTypography.caption
+                                                .copyWith(fontSize: 9.5),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      _studentCard == null
+                                          ? Icons.chevron_right_rounded
+                                          : Icons.sync_rounded,
+                                      color: AppColors.outline,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Container(
@@ -651,7 +774,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              'Create Student Account',
+                                              'Create Account',
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w700,
@@ -766,61 +889,6 @@ const BoxDecoration _fieldBox = BoxDecoration(
   ],
 );
 
-class _RoleButton extends StatelessWidget {
-  final String label;
-  final String detail;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _RoleButton({
-    required this.label,
-    required this.detail,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: Material(
-        color: selected ? AppColors.brandIndigo : Colors.white,
-        shape: const StadiumBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const StadiumBorder(),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: 16,
-                  color: selected ? Colors.white : AppColors.onSurfaceVariant),
-              const SizedBox(width: 5),
-              Text(label,
-                  style: TextStyle(
-                      color: selected ? Colors.white : AppColors.onSurface,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800)),
-              const SizedBox(width: 3),
-              Flexible(
-                child: Text(
-                  detail,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: selected ? Colors.white : AppColors.onSurfaceVariant,
-                    fontSize: 9.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _GoogleIconPainter extends CustomPainter {
   @override
