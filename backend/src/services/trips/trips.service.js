@@ -28,9 +28,14 @@ function publish(ownerId, details) {
   });
 }
 
-function findUpcomingTrip(ownerId, id, action) {
+function findOwnedTrip(ownerId, id) {
   const trip = tripsRepository.find(ownerId, id);
   if (!trip) throw tripError(404, 'Trip not found');
+  return trip;
+}
+
+function findUpcomingTrip(ownerId, id, action) {
+  const trip = findOwnedTrip(ownerId, id);
   if (trip.status !== 'published' || Date.parse(trip.details.departureAt) <= Date.now()) {
     throw tripError(409, `Only published trips with a future departure can be ${action}`);
   }
@@ -52,4 +57,13 @@ function cancel(ownerId, id) {
   return tripsRepository.setStatus(ownerId, id, 'cancelled');
 }
 
-module.exports = { publish, update, cancel };
+function start(ownerId, id) {
+  const trip = findOwnedTrip(ownerId, id);
+  const departureReached = Date.parse(trip.details.departureAt) <= Date.now();
+  if (trip.status !== 'published' || !departureReached) {
+    throw tripError(409, 'Only published trips at or after their scheduled departure can be started');
+  }
+  return tripsRepository.setStatus(ownerId, id, 'in_progress');
+}
+
+module.exports = { publish, update, cancel, start };

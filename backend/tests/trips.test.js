@@ -42,6 +42,7 @@ jest.mock('../src/repositories/trips/trips.repository', () => {
         ['trip-completed', 'completed'],
         ['trip-cancelled', 'cancelled'],
         ['trip-due', 'published'],
+        ['trip-exact-departure', 'published'],
       ].map(([id, status]) => ({
         id,
         ownerId: 'driver-closed',
@@ -334,8 +335,12 @@ test.each([
   expect((await get('/' + id, owner)).data).toEqual(original.data);
 });
 
-function cancelTrip(id, token = 'driver-a', body) {
-  return request('PATCH', '/' + id + '/cancel', token, body);
+function tripAction(action, id, token = 'driver-a', body) {
+  return request('PATCH', '/' + id + '/' + action, token, body);
+}
+
+function cancelTrip(id, token, body) {
+  return tripAction('cancel', id, token, body);
 }
 
 test('cancels an upcoming trip, keeps its details and exposes its status through GET', async () => {
@@ -376,6 +381,67 @@ test('rejects attempts to change the trip through the cancellation body', async 
   const original = await publishedTrip();
   for (const body of [{ status: 'cancelled' }, { ownerId: 'driver-b' }, { origin: 'Centre' }]) {
     expect((await cancelTrip(original.id, 'driver-a', body)).status).toBe(400);
+  }
+  expect((await get('/' + original.id)).data).toEqual(original);
+});
+
+function startTrip(id, token, body) {
+  return tripAction('start', id, token, body);
+}
+
+test.each([
+  ['trip-exact-departure', 0],
+  ['trip-due', 60000],
+])('starts a published trip at or after departure (%s)', async (id, delay) => {
+  const owner = 'driver-closed';
+  const original = await get('/' + id, owner);
+  expect(original.status).toBe(200);
+  const departure = Date.parse(original.data.details.departureAt);
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(departure + delay);
+  try {
+    const result = await startTrip(id, owner);
+    expect(result.status).toBe(200);
+    expect(result.data).toEqual({ ...original.data, status: 'in_progress' });
+    expect((await get('/' + id, owner)).data).toEqual(result.data);
+    expect((await get('', owner)).data).toContainEqual(result.data);
+    expect((await startTrip(id, owner)).status).toBe(409);
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+test('rejects an early start without changing the trip', async () => {
+  const original = await publishedTrip();
+  expect((await startTrip(original.id)).status).toBe(409);
+  expect((await get('/' + original.id)).data).toEqual(original);
+});
+
+test('requires authentication and hides another driver’s trip', async () => {
+  const original = await publishedTrip();
+  expect((await startTrip(original.id, null)).status).toBe(401);
+  expect((await startTrip(original.id, 'invalid')).status).toBe(401);
+  const foreign = await startTrip(original.id, 'driver-b');
+  const missing = await startTrip('missing', 'driver-b');
+  expect(foreign.status).toBe(404);
+  expect(foreign).toEqual(missing);
+  expect((await get('/' + original.id)).data).toEqual(original);
+});
+
+test.each([
+  ['trip-b', 'driver-b'],
+  ['trip-completed', 'driver-closed'],
+  ['trip-cancelled', 'driver-closed'],
+])('rejects starting a trip with an ineligible status (%s)', async (id, owner) => {
+  const original = await get('/' + id, owner);
+  expect(original.status).toBe(200);
+  expect((await startTrip(id, owner, {})).status).toBe(409);
+  expect((await get('/' + id, owner)).data).toEqual(original.data);
+});
+
+test('rejects fields in the start request body', async () => {
+  const original = await publishedTrip();
+  for (const body of [{ status: 'in_progress' }, { ownerId: 'driver-b' }, { seats: 1 }]) {
+    expect((await startTrip(original.id, 'driver-a', body)).status).toBe(400);
   }
   expect((await get('/' + original.id)).data).toEqual(original);
 });
