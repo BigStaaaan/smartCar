@@ -1,7 +1,7 @@
 jest.mock('../src/config/firebase', () => ({
   auth: () => ({
     async verifyIdToken(token) {
-      if (!['driver-a', 'driver-b', 'driver-empty'].includes(token)) {
+      if (!['driver-a', 'driver-b', 'driver-empty', 'driver-closed'].includes(token)) {
         throw new Error('Invalid token');
       }
       return { uid: token };
@@ -38,6 +38,22 @@ jest.mock('../src/repositories/trips/trips.repository', () => {
           seats: 1,
         },
       },
+      ...[
+        ['trip-completed', 'completed'],
+        ['trip-cancelled', 'cancelled'],
+        ['trip-due', 'published'],
+      ].map(([id, status]) => ({
+        id,
+        ownerId: 'driver-closed',
+        status,
+        details: {
+          origin: 'Gare',
+          destination: 'Campus',
+          departureAt: '2000-03-05T09:00:00.000Z',
+          vehicleId: 'vehicle-empty',
+          seats: 1,
+        },
+      })),
     ]),
   };
 });
@@ -213,4 +229,107 @@ test.each([
   const result = await publish({ ...input, ...changes });
   expect(result.status).toBe(400);
   expect((await get()).data).toEqual(before);
+});
+
+function editTrip(id, body, token = 'driver-a') {
+  return request('PATCH', '/' + id, token, body);
+}
+
+async function publishedTrip(vehicleId = createVehicle('driver-a').id) {
+  const result = await publish(publicationInput(vehicleId));
+  expect(result.status).toBe(201);
+  return result.data;
+}
+
+test('patches all editable fields and retains the id and published status', async () => {
+  const original = await publishedTrip();
+  const replacement = createVehicle('driver-a');
+  const changes = {
+    origin: '  Université  ',
+    destination: 'Centre',
+    departureAt: new Date(Date.now() + 172800000).toISOString(),
+    vehicleId: replacement.id,
+    seats: 1,
+    contributionDh: 20,
+  };
+  const result = await editTrip(original.id, changes);
+  expect(result.status).toBe(200);
+  expect(result.data).toEqual({
+    id: original.id,
+    status: 'published',
+    details: { ...changes, origin: 'Université' },
+  });
+  expect((await get('/' + original.id)).data).toEqual(result.data);
+  expect((await get()).data).toContainEqual(result.data);
+});
+
+test('patches only the supplied fields, including clearing the contribution', async () => {
+  const original = await publishedTrip();
+  const result = await editTrip(original.id, { seats: 1, contributionDh: null });
+  expect(result.status).toBe(200);
+  expect(result.data).toEqual({
+    ...original,
+    details: { ...original.details, seats: 1, contributionDh: null },
+  });
+});
+
+test('rejects unauthenticated edits and hides private trips', async () => {
+  const original = await publishedTrip();
+  const changes = { origin: 'Centre' };
+  expect((await editTrip(original.id, changes, null)).status).toBe(401);
+  expect((await editTrip(original.id, changes, 'invalid')).status).toBe(401);
+  const foreign = await editTrip(original.id, changes, 'driver-b');
+  const missing = await editTrip('missing', changes, 'driver-b');
+  expect(foreign).toEqual(missing);
+  expect(foreign.status).toBe(404);
+  expect((await get('/' + original.id)).data).toEqual(original);
+});
+
+test('rejects a foreign vehicle or insufficient capacity without changing the trip', async () => {
+  const original = await publishedTrip();
+  const foreign = createVehicle('driver-b');
+  const small = vehicles.create('driver-a', { passengerCapacity: 1 });
+
+  expect((await editTrip(original.id, { vehicleId: foreign.id })).status).toBe(404);
+  expect((await editTrip(original.id, { vehicleId: 'missing' })).status).toBe(404);
+  expect((await editTrip(original.id, { vehicleId: small.id })).status).toBe(400);
+  expect((await editTrip(original.id, { seats: 3 })).status).toBe(400);
+  expect((await get('/' + original.id)).data).toEqual(original);
+
+  const result = await editTrip(original.id, { vehicleId: small.id, seats: 1 });
+  expect(result.status).toBe(200);
+  expect(result.data.details).toMatchObject({ vehicleId: small.id, seats: 1 });
+});
+
+test.each([
+  ['empty body', {}],
+  ['blank origin', { origin: ' ' }],
+  ['same locations after merging', { destination: ' gArE ' }],
+  ['invalid departure format', { departureAt: '2099-03-05' }],
+  ['departure in the past', { departureAt: '2000-03-05T09:00:00Z' }],
+  ['zero seats', { seats: 0 }],
+  ['fractional seats', { seats: 1.5 }],
+  ['negative contribution', { contributionDh: -1 }],
+  ['contribution over 40 DH', { contributionDh: 41 }],
+  ['fractional contribution', { contributionDh: 1.5 }],
+  ['owner override', { ownerId: 'driver-b' }],
+  ['id override', { id: 'new-id' }],
+  ['status override', { status: 'published' }],
+])('rejects %s without changing the original trip', async (_label, changes) => {
+  const original = await publishedTrip();
+  expect((await editTrip(original.id, changes)).status).toBe(400);
+  expect((await get('/' + original.id)).data).toEqual(original);
+});
+
+test.each([
+  ['trip-b', 'driver-b', 'in_progress'],
+  ['trip-completed', 'driver-closed', 'completed'],
+  ['trip-cancelled', 'driver-closed', 'cancelled'],
+  ['trip-due', 'driver-closed', 'published'],
+])('rejects editing an ineligible trip %s', async (id, owner, status) => {
+  const original = await get('/' + id, owner);
+  expect(original.data.status).toBe(status);
+  const result = await editTrip(id, { origin: 'Centre modifié' }, owner);
+  expect(result.status).toBe(409);
+  expect((await get('/' + id, owner)).data).toEqual(original.data);
 });

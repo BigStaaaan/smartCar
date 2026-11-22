@@ -18,7 +18,15 @@ function createTripsRepository(initialTrips = []) {
     return trip;
   }
 
-  return { list, find, create };
+  function update(ownerId, id, details) {
+    const trip = find(ownerId, id);
+    if (!trip) return undefined;
+    const updated = { ...trip, details };
+    trips.set(id, updated);
+    return updated;
+  }
+
+  return { list, find, create, update };
 }
 
 module.exports = { createTripsRepository, tripsRepository: createTripsRepository() };

@@ -2,10 +2,10 @@ const Joi = require('joi');
 
 const departurePattern = /^(\d{4}-\d{2}-\d{2})T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
-const create = Joi.object({
-  origin: Joi.string().trim().required(),
-  destination: Joi.string().trim().required(),
-  departureAt: Joi.string().trim().required().custom((value, helpers) => {
+const fields = Joi.object({
+  origin: Joi.string().trim(),
+  destination: Joi.string().trim(),
+  departureAt: Joi.string().trim().custom((value, helpers) => {
     const date = departurePattern.exec(value)?.[1];
     const departure = new Date(value);
     if (!date || !Number.isFinite(departure.getTime()) ||
@@ -14,9 +14,15 @@ const create = Joi.object({
     }
     return departure.toISOString();
   }),
-  vehicleId: Joi.string().trim().required(),
-  seats: Joi.number().integer().min(1).required(),
+  vehicleId: Joi.string().trim(),
+  seats: Joi.number().integer().min(1),
   contributionDh: Joi.number().integer().min(0).max(40).allow(null),
 }).required().unknown(false);
 
-module.exports = { create };
+const create = fields.fork(
+  ['origin', 'destination', 'departureAt', 'vehicleId', 'seats'],
+  (field) => field.required(),
+);
+const update = fields.min(1);
+
+module.exports = { create, update };

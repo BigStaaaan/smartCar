@@ -27,4 +27,9 @@ async function create(req, res) {
   return res.status(201).json(tripResponse(trip));
 }
 
-module.exports = { list, get, create };
+async function update(req, res) {
+  const trip = await service.update(req.user.uid, req.params.id, req.body);
+  return res.json(tripResponse(trip));
+}
+
+module.exports = { list, get, create, update };

@@ -15,5 +15,6 @@ router.use(authenticate);
 router.get('/', asyncHandler(controller.list));
 router.get('/:id', asyncHandler(controller.get));
 router.post('/', validate(schemas.create), asyncHandler(controller.create));
+router.patch('/:id', validate(schemas.update), asyncHandler(controller.update));
 
 module.exports = router;
