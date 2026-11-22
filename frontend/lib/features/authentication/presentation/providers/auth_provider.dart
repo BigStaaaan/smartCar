@@ -86,6 +86,49 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(errorMessage: null);
   }
 
+  String _authErrorMessage(Object error) {
+    if (error is FirebaseAuthException) {
+      switch (error.code) {
+        case 'invalid-email':
+          return 'L’adresse email saisie est invalide.';
+        case 'user-disabled':
+          return 'Ce compte a été désactivé. Contactez l’administration.';
+        case 'user-not-found':
+        case 'wrong-password':
+        case 'invalid-credential':
+        case 'invalid-login-credentials':
+          return 'Email ou mot de passe incorrect.';
+        case 'email-already-in-use':
+          return 'Un compte existe déjà avec cette adresse email.';
+        case 'weak-password':
+          return 'Le mot de passe est trop faible. Utilisez au moins 8 caractères.';
+        case 'too-many-requests':
+          return 'Trop de tentatives. Réessayez dans quelques minutes.';
+        case 'network-request-failed':
+          return 'Impossible de contacter le serveur. Vérifiez votre connexion.';
+        case 'popup-closed-by-user':
+          return 'La fenêtre de connexion Google a été fermée.';
+        case 'unauthorized-domain':
+          return 'Ce domaine n’est pas autorisé pour la connexion Google.';
+        default:
+          return error.message?.trim().isNotEmpty == true
+              ? error.message!
+              : 'La connexion a échoué. Réessayez.';
+      }
+    }
+    if (error is DioException) {
+      final responseData = error.response?.data;
+      if (responseData is Map && responseData['error'] is String) {
+        return responseData['error'] as String;
+      }
+      if (error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.connectionTimeout) {
+        return 'Impossible de joindre le serveur SmartCar.';
+      }
+    }
+    return 'Une erreur inattendue est survenue. Réessayez.';
+  }
+
   Future<bool> signInWithEmail({
     required String email,
     required String password,
@@ -150,7 +193,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: _authErrorMessage(e),
       );
       return false;
     }
@@ -289,7 +332,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
-      String message = e.toString();
+      String message = _authErrorMessage(e);
       if (e is DioException) {
         final responseData = e.response?.data;
         if (responseData is Map && responseData['error'] is String) {

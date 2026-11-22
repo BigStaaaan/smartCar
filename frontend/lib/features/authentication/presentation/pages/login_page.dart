@@ -4,6 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/validators/email_validator.dart';
 import '../../../../core/validators/required_validator.dart';
+import '../../../../core/widgets/auth_error_dialog.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../providers/auth_provider.dart';
 import 'register_page.dart';
@@ -56,12 +57,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } else {
       final errorMessage =
           ref.read(authProvider).errorMessage ?? 'Login failed. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      await showAuthErrorDialog(context, errorMessage, title: 'Connexion impossible');
     }
   }
 
@@ -82,11 +78,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } else {
       final errorMessage =
           ref.read(authProvider).errorMessage ?? 'Google Sign-In failed.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: AppColors.error,
-        ),
+      await showAuthErrorDialog(
+        context,
+        errorMessage,
+        title: 'Connexion Google impossible',
       );
     }
   }

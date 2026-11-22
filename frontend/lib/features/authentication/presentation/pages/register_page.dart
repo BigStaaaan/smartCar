@@ -8,6 +8,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/validators/email_validator.dart';
 import '../../../../core/validators/required_validator.dart';
+import '../../../../core/widgets/auth_error_dialog.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../email_verification/presentation/pages/email_verification_page.dart';
 import '../providers/auth_provider.dart';
@@ -80,11 +81,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       final bytes = await card.readAsBytes();
       if (!mounted) return;
       if (bytes.lengthInBytes > 5 * 1024 * 1024) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Student card image must be smaller than 5 MB'),
-            backgroundColor: AppColors.error,
-          ),
+        await showAuthErrorDialog(
+          context,
+          'Votre carte étudiant doit faire moins de 5 MB.',
+          title: 'Image trop volumineuse',
         );
         return;
       }
@@ -98,16 +98,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
     if (_studentCard == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload your student card for verification'),
-        ),
+      await showAuthErrorDialog(
+        context,
+        'Ajoutez une photo de votre carte étudiant pour envoyer la demande de vérification.',
+        title: 'Carte étudiant requise',
       );
       return;
     }
     if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please accept the carpool guidelines')),
+      await showAuthErrorDialog(
+        context,
+        'Vous devez accepter les règles de covoiturage avant de créer votre compte.',
+        title: 'Conditions requises',
       );
       return;
     }
@@ -133,21 +135,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } else {
       final message =
           ref.read(authProvider).errorMessage ?? 'Account creation failed.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-        ),
+      await showAuthErrorDialog(
+        context,
+        message,
+        title: 'Création du compte impossible',
       );
     }
   }
 
   Future<void> _handleGoogleSignUp() async {
     if (_studentCard == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload your student card for verification'),
-        ),
+      await showAuthErrorDialog(
+        context,
+        'Ajoutez une photo de votre carte étudiant avant de continuer.',
+        title: 'Carte étudiant requise',
       );
       return;
     }
@@ -163,11 +164,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } else {
       final message =
           ref.read(authProvider).errorMessage ?? 'Google Sign-In failed.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-        ),
+      await showAuthErrorDialog(
+        context,
+        message,
+        title: 'Connexion Google impossible',
       );
     }
   }

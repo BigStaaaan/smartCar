@@ -5,6 +5,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../university_verification/presentation/pages/university_verification_page.dart';
+import '../widgets/smartcar_sidebar.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -100,99 +101,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      drawer: Drawer(
-        backgroundColor: AppColors.surfaceContainerLowest,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SmartCar',
-                  style: AppTypography.headlineMd,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  user?.displayName ?? user?.email ?? 'Campus carpool',
-                  style: AppTypography.bodySm,
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: isDriver
-                        ? AppColors.primaryFixed
-                        : AppColors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isDriver
-                            ? Icons.directions_car_rounded
-                            : Icons.person_rounded,
-                        color: AppColors.brandIndigo,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isDriver ? 'Driver Mode' : 'Passenger Mode',
-                              style: AppTypography.labelMd,
-                            ),
-                            Text(
-                              isDriver
-                                  ? 'Publish and manage trips'
-                                  : 'Find rides and book seats',
-                              style: AppTypography.caption,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: authState.isLoading ? null : _switchMode,
-                    icon: Icon(
-                      isDriver
-                          ? Icons.person_rounded
-                          : Icons.directions_car_rounded,
-                    ),
-                    label: Text(
-                      isDriver
-                          ? 'Switch to Passenger Mode'
-                          : user?.role == 'DRIVER'
-                              ? 'Switch to Driver Mode'
-                              : 'Switch to Driver Mode',
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                const Divider(),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.logout_rounded),
-                  title: const Text('Sign out'),
-                  onTap: () async {
-                    await ref.read(authProvider.notifier).signOut();
-                    if (context.mounted) {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      drawer: const SmartCarSidebar(selectedLabel: 'Tableau de bord'),
       appBar: AppBar(
         title: Text(
           isDriver ? 'Driver Dashboard' : 'Passenger Dashboard',
