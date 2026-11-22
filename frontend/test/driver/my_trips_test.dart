@@ -59,10 +59,12 @@ Future<void> tap(WidgetTester tester, Finder target) async {
 }
 
 Trip savedTrip(String origin, DateTime departure,
-        {TripStatus status = TripStatus.published}) =>
+        {TripStatus status = TripStatus.published,
+        List<String>? confirmedPassengerNames}) =>
     Trip(
       id: origin,
       status: status,
+      confirmedPassengerNames: confirmedPassengerNames,
       details: PublishTrip(
         origin: origin,
         destination: 'Université',
@@ -227,6 +229,8 @@ void main() {
     await tap(tester, find.text('Confirmer le démarrage'));
     expect((await repository.listMine()).single.status, TripStatus.inProgress);
     expect(find.text('En cours'), findsOneWidget);
+    expect(find.text('Trajet en cours'), findsOneWidget);
+    expect(find.text('Liste des passagers indisponible'), findsOneWidget);
     expect(find.text('Modifier'), findsNothing);
     expect(find.text('Annuler le trajet'), findsNothing);
 
@@ -351,7 +355,8 @@ void main() {
   testWidgets('dashboard reflects start and completion of its featured trip',
       (tester) async {
     final ready = savedTrip(
-        'Départ de démo', DateTime.now().subtract(const Duration(minutes: 1)));
+        'Départ de démo', DateTime.now().subtract(const Duration(minutes: 1)),
+        confirmedPassengerNames: const ['Salma E.', 'Omar B.']);
     final repository = DemoTripRepository(initialTrips: [ready]);
     await openTrips(tester, repository, fromDashboard: true);
 
@@ -359,11 +364,22 @@ void main() {
     await tap(tester, find.text('Voir le trajet'));
     await tap(tester, find.text('Démarrer le trajet'));
     await tap(tester, find.text('Confirmer le démarrage'));
+    expect(find.text('Trajet en cours'), findsOneWidget);
+    expect(find.text('Départ de démo'), findsOneWidget);
+    expect(find.text('Université'), findsOneWidget);
+    expect(find.text('Dacia Logan'), findsOneWidget);
+    expect(find.text('Date et heure prévues'), findsOneWidget);
+    expect(find.text('Salma E.'), findsOneWidget);
+    expect(find.text('Omar B.'), findsOneWidget);
+    expect(find.text('Schéma du trajet'), findsNothing);
     await tap(tester, find.byTooltip('Retour au Dashboard'));
     expect(find.text('En cours'), findsWidgets);
     expect(find.text('1'), findsOneWidget);
 
     await tap(tester, find.text('Voir le trajet'));
+    expect(find.text('Trajet en cours'), findsOneWidget);
+    expect(find.text('Démarrer le trajet'), findsNothing);
+    expect(find.text('Salma E.'), findsOneWidget);
     await tap(tester, find.text('Terminer le trajet'));
     await tap(tester, find.text('Confirmer la fin du trajet'));
     await tap(tester, find.byTooltip('Retour au Dashboard'));

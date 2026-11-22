@@ -9,6 +9,7 @@ import '../../../vehicles/presentation/vehicle_theme.dart';
 import '../../domain/entities/trip.dart';
 import '../providers/trip_provider.dart';
 import '../widgets/trip_publish_controls.dart';
+import 'active_trip_page.dart';
 import 'publish_trip_page.dart';
 
 String tripDateLabel(DateTime departure) {
@@ -168,6 +169,22 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
         .where((vehicle) => vehicle.id == details.vehicleId)
         .firstOrNull;
     final now = DateTime.now();
+    if (trip.status == TripStatus.inProgress) {
+      return ActiveTripPage(
+        trip: trip,
+        departureLabel: tripDateLabel(details.departureAt),
+        vehicleLabel: vehicle?.name ?? 'Véhicule indisponible',
+        backTooltip: widget.backTooltip,
+        onComplete: _changingStatus
+            ? null
+            : (context) => _confirmStatusChange(
+                  context,
+                  action: 'Terminer le trajet',
+                  confirmation: 'Confirmer la fin du trajet',
+                  changeStatus: ref.read(tripRepositoryProvider).complete,
+                ),
+      );
+    }
     return Theme(
       data: vehicleTheme(),
       child: Builder(
@@ -324,34 +341,20 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                                       child: const Text('Annuler le trajet'))),
                             ]),
                           ],
-                          if (trip.canStart(now) ||
-                              trip.status == TripStatus.inProgress) ...[
+                          if (trip.canStart(now)) ...[
                             const SizedBox(height: 14),
                             FilledButton(
                               onPressed: _changingStatus
                                   ? null
-                                  : () {
-                                      final starting =
-                                          trip.canStart(DateTime.now());
-                                      final action = starting
-                                          ? 'Démarrer le trajet'
-                                          : 'Terminer le trajet';
-                                      final repository =
-                                          ref.read(tripRepositoryProvider);
-                                      _confirmStatusChange(
+                                  : () => _confirmStatusChange(
                                         context,
-                                        action: action,
-                                        confirmation: starting
-                                            ? 'Confirmer le démarrage'
-                                            : 'Confirmer la fin du trajet',
-                                        changeStatus: starting
-                                            ? repository.start
-                                            : repository.complete,
-                                      );
-                                    },
-                              child: Text(trip.status == TripStatus.inProgress
-                                  ? 'Terminer le trajet'
-                                  : 'Démarrer le trajet'),
+                                        action: 'Démarrer le trajet',
+                                        confirmation: 'Confirmer le démarrage',
+                                        changeStatus: ref
+                                            .read(tripRepositoryProvider)
+                                            .start,
+                                      ),
+                              child: const Text('Démarrer le trajet'),
                             ),
                           ],
                         ],
