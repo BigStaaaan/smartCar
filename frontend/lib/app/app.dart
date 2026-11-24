@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../features/splash/presentation/pages/splash_page.dart';
 import 'theme/app_theme.dart';
 
 class SmartCarApp extends StatelessWidget {
@@ -14,7 +14,7 @@ class SmartCarApp extends StatelessWidget {
         title: 'SmartCar',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: const OnboardingPage(),
+        home: const SplashPage(),
       ),
     );
   }
