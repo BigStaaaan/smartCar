@@ -36,9 +36,10 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
   List<Trip> _visibleTrips(List<Trip> trips, DateTime now) {
     final matching = trips
         .where((trip) => switch (_filter) {
-              _TripFilter.upcoming => trip.isUpcoming(now),
+              _TripFilter.upcoming =>
+                trip.isUpcoming(now) || trip.status == TripStatus.inProgress,
               _TripFilter.past =>
-                trip.status != TripStatus.cancelled && !trip.isUpcoming(now),
+                trip.status == TripStatus.completed || trip.canStart(now),
               _TripFilter.cancelled => trip.status == TripStatus.cancelled,
             })
         .toList();
@@ -65,6 +66,7 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
           reduced ? Duration.zero : const Duration(milliseconds: 250),
       pageBuilder: (context, animation, secondaryAnimation) => TripDetailsPage(
         trip: trip,
+        isPreview: widget.isPreview,
         originCoordinates: coordinates?.origin,
         destinationCoordinates: coordinates?.destination,
       ),
@@ -91,10 +93,10 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
     final count =
         trips.valueOrNull?.where((trip) => trip.isUpcoming(now)).length;
     return Theme(
-      data: vehicleTheme(),
+      data: driverTheme(),
       child: Builder(
           builder: (context) => Scaffold(
-                backgroundColor: vehicleCream,
+                backgroundColor: driverSurface,
                 body: SafeArea(
                   child: Center(
                     child: ConstrainedBox(
@@ -103,11 +105,11 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
                         const Positioned(
                             top: -70,
                             right: -70,
-                            child: TripHalo(color: vehicleTeal)),
+                            child: TripHalo(color: driverHighlight)),
                         const Positioned(
                             bottom: 30,
                             left: -80,
-                            child: TripHalo(color: vehicleBlue)),
+                            child: TripHalo(color: driverOutline)),
                         Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -119,6 +121,16 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Row(children: [
+                                        if (Navigator.canPop(context)) ...[
+                                          TripCircleButton(
+                                            tooltip: 'Retour',
+                                            onPressed: () =>
+                                                Navigator.maybePop(context),
+                                            child:
+                                                const Icon(Icons.chevron_left),
+                                          ),
+                                          const SizedBox(width: 8),
+                                        ],
                                         Expanded(
                                             child: Text(
                                           'Mes trajets',
@@ -180,7 +192,7 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
                                             const SizedBox(height: 10),
                                         itemBuilder: (context, index) {
                                           if (visible.isEmpty) {
-                                            return const TripOliveCard(
+                                            return const DriverCard(
                                               child: _TripsEmpty(),
                                             );
                                           }
@@ -258,7 +270,7 @@ class _TripsTabs extends StatelessWidget {
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: vehicleTeal),
+          border: Border.all(color: driverHighlight),
         ),
         child: Stack(children: [
           Positioned.fill(
@@ -273,7 +285,7 @@ class _TripsTabs extends StatelessWidget {
                 heightFactor: 1,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: vehicleTeal,
+                    color: driverHighlight,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -341,7 +353,7 @@ class _TripCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => TripOliveCard(
+  Widget build(BuildContext context) => DriverCard(
         onTap: onTap,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -376,7 +388,7 @@ class _TripCard extends StatelessWidget {
                       height: 4,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(4),
-                        color: vehicleBlue.withValues(alpha: .62),
+                        color: driverOutline.withValues(alpha: .62),
                       ),
                     ),
                   ]),

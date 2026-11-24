@@ -8,13 +8,15 @@ import '../../../vehicles/presentation/vehicle_provider.dart';
 import '../../../vehicles/presentation/vehicle_theme.dart';
 import '../../../vehicles/presentation/vehicles_page.dart';
 import '../../domain/entities/publish_trip.dart';
+import '../../domain/entities/trip.dart';
 import '../providers/trip_provider.dart';
 import '../widgets/trip_publish_confirmation.dart';
 import '../widgets/trip_publish_controls.dart';
 
 class TripForm extends ConsumerStatefulWidget {
-  const TripForm({super.key, required this.isPreview});
+  const TripForm({super.key, required this.isPreview, this.tripToEdit});
   final bool isPreview;
+  final Trip? tripToEdit;
 
   @override
   ConsumerState<TripForm> createState() => _TripFormState();
@@ -46,6 +48,21 @@ class _TripFormState extends ConsumerState<TripForm>
       DateTime(_day.year, _day.month, _day.day, _minutes ~/ 60, _minutes % 60);
   bool get _departureIsFuture => _departure.isAfter(DateTime.now());
   bool get _reducedMotion => MediaQuery.disableAnimationsOf(context);
+
+  @override
+  void initState() {
+    super.initState();
+    final details = widget.tripToEdit?.details;
+    if (details == null) return;
+    final departure = details.departureAt.toLocal();
+    _origin.text = details.origin;
+    _destination.text = details.destination;
+    _day = DateUtils.dateOnly(departure);
+    _minutes = departure.hour * 60 + departure.minute;
+    _seats = details.seats;
+    _price = details.contributionDh ?? 0;
+    _vehicleId = details.vehicleId;
+  }
 
   @override
   void didChangeDependencies() {
@@ -122,13 +139,13 @@ class _TripFormState extends ConsumerState<TripForm>
     for (final item in items) {
       if (item.id == _vehicleId) return item;
     }
-    return items.firstOrNull;
+    return widget.tripToEdit == null ? items.firstOrNull : null;
   }
 
   Future<void> _chooseVehicle(List<Vehicle> items, Vehicle selected) async {
     final next = await showModalBottomSheet<Vehicle>(
       context: context,
-      backgroundColor: vehicleCream,
+      backgroundColor: driverSurface,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -155,22 +172,30 @@ class _TripFormState extends ConsumerState<TripForm>
     });
   }
 
-  Future<void> _publish() async {
+  int _capacity(Vehicle? vehicle) =>
+      vehicle?.details.passengerCapacity ??
+      widget.tripToEdit?.details.seats ??
+      0;
+
+  Future<void> _saveTrip() async {
     if (_saving || _published) return;
     FocusScope.of(context).unfocus();
     final valid = _form.currentState?.validate() ?? false;
     final vehicle =
         _selected(ref.read(vehiclesProvider).valueOrNull ?? const []);
+    final tripToEdit = widget.tripToEdit;
+    final vehicleId = vehicle?.id ?? tripToEdit?.details.vehicleId;
+    final capacity = _capacity(vehicle);
     final departure = _departure;
     if (!valid ||
-        vehicle == null ||
-        vehicle.details.passengerCapacity < 1 ||
+        vehicleId == null ||
+        capacity < 1 ||
         !departure.isAfter(DateTime.now())) {
       setState(() {
         _validateDeparture = true;
         _error = !valid
             ? 'Vérifiez le départ et la destination.'
-            : vehicle == null || vehicle.details.passengerCapacity < 1
+            : vehicleId == null || capacity < 1
                 ? 'Sélectionnez un véhicule disposant de places.'
                 : null;
       });
@@ -180,26 +205,36 @@ class _TripFormState extends ConsumerState<TripForm>
       _saving = true;
       _error = null;
     });
+    Trip? updatedTrip;
     try {
-      await ref.read(tripRepositoryProvider).publish(PublishTrip(
-            origin: _origin.text.trim(),
-            destination: _destination.text.trim(),
-            departureAt: departure,
-            vehicleId: vehicle.id,
-            seats: math.min(_seats, vehicle.details.passengerCapacity),
-            contributionDh: _price == 0 ? null : _price,
-          ));
-      if (mounted) {
-        _drift.stop();
-        setState(() => _published = true);
+      final repository = ref.read(tripRepositoryProvider);
+      final details = PublishTrip(
+        origin: _origin.text.trim(),
+        destination: _destination.text.trim(),
+        departureAt: departure,
+        vehicleId: vehicleId,
+        seats: math.min(_seats, capacity),
+        contributionDh: _price == 0 ? null : _price,
+      );
+      if (tripToEdit != null) {
+        updatedTrip = await repository.update(tripToEdit.id, details);
+      } else {
+        await repository.publish(details);
+        if (mounted) {
+          _drift.stop();
+          setState(() => _published = true);
+        }
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Publication impossible. Réessayez.');
+        setState(() => _error = tripToEdit == null
+            ? 'Publication impossible. Réessayez.'
+            : 'Modification impossible. Réessayez.');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+    if (mounted && updatedTrip != null) Navigator.of(context).pop(updatedTrip);
   }
 
   void _finish() {
@@ -248,7 +283,7 @@ class _TripFormState extends ConsumerState<TripForm>
           {required bool origin}) =>
       Row(children: [
         Icon(origin ? Icons.radio_button_unchecked : Icons.circle,
-            size: 11, color: vehicleOlive),
+            size: 11, color: driverAccent),
         const SizedBox(width: 8),
         Expanded(
             child: Semantics(
@@ -266,7 +301,7 @@ class _TripFormState extends ConsumerState<TripForm>
                 ?.copyWith(fontWeight: FontWeight.w800),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: vehicleInk.withValues(alpha: .64)),
+              hintStyle: TextStyle(color: driverText.withValues(alpha: .64)),
               filled: false,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 5),
@@ -289,7 +324,7 @@ class _TripFormState extends ConsumerState<TripForm>
         )),
       ]);
 
-  Widget _routeCard() => TripOliveCard(
+  Widget _routeCard() => DriverCard(
         child: Row(children: [
           Expanded(
               child: Column(children: [
@@ -315,8 +350,8 @@ class _TripFormState extends ConsumerState<TripForm>
 
   Widget _vehicleCard(AsyncValue<List<Vehicle>> vehicles, Vehicle? selected) {
     if (selected != null) {
-      return TripOliveCard(
-        onTap: _saving
+      return DriverCard(
+        onTap: _saving || widget.tripToEdit != null
             ? null
             : () => _chooseVehicle(vehicles.valueOrNull ?? [], selected),
         child: Row(children: [
@@ -332,16 +367,18 @@ class _TripFormState extends ConsumerState<TripForm>
                 TripNote(
                     '${selected.details.registrationNumber} · ${selected.details.passengerCapacity} places'),
               ])),
-          const SizedBox(width: 8),
-          const TripNote('Changer ⇄'),
+          if (widget.tripToEdit == null) ...[
+            const SizedBox(width: 8),
+            const TripNote('Changer ⇄'),
+          ],
         ]),
       );
     }
     if (vehicles.isLoading) {
-      return const TripOliveCard(child: TripNote('Chargement des véhicules…'));
+      return const DriverCard(child: TripNote('Chargement des véhicules…'));
     }
     if (vehicles.hasError) {
-      return TripOliveCard(
+      return DriverCard(
         child: Row(children: [
           const Expanded(child: Text('Véhicules indisponibles')),
           TextButton(
@@ -350,7 +387,10 @@ class _TripFormState extends ConsumerState<TripForm>
         ]),
       );
     }
-    return TripOliveCard(
+    if (widget.tripToEdit != null) {
+      return const DriverCard(child: TripNote('Véhicule indisponible'));
+    }
+    return DriverCard(
       child: Row(children: [
         const Expanded(child: Text('Aucun véhicule disponible')),
         if (widget.isPreview)
@@ -466,7 +506,7 @@ class _TripFormState extends ConsumerState<TripForm>
             padding: EdgeInsets.only(top: 4),
             child: Text(
               'Choisissez une date et une heure de départ futures.',
-              style: TextStyle(color: Color(0xffa2402f), fontSize: 12),
+              style: TextStyle(color: driverError, fontSize: 12),
             ),
           ),
       ],
@@ -522,9 +562,9 @@ class _TripFormState extends ConsumerState<TripForm>
               trackHeight: 6,
               trackShape: const RoundedRectSliderTrackShape(),
               tickMarkShape: SliderTickMarkShape.noTickMark,
-              activeTrackColor: vehicleTeal,
-              inactiveTrackColor: vehicleTeal,
-              thumbColor: vehicleOlive,
+              activeTrackColor: driverHighlight,
+              inactiveTrackColor: driverHighlight,
+              thumbColor: driverAccent,
               thumbShape: const TripSliderThumb(),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 17),
               showValueIndicator: ShowValueIndicator.never,
@@ -563,7 +603,8 @@ class _TripFormState extends ConsumerState<TripForm>
   Widget build(BuildContext context) {
     final vehicles = ref.watch(vehiclesProvider);
     final selected = _selected(vehicles.valueOrNull ?? const []);
-    final capacity = selected?.details.passengerCapacity ?? 0;
+    final capacity = _capacity(selected);
+    final editing = widget.tripToEdit != null;
     final seats = math.min(_seats, math.max(0, capacity));
     return PopScope(
       canPop: !_saving,
@@ -581,9 +622,10 @@ class _TripFormState extends ConsumerState<TripForm>
             ? TripPublishConfirmation(
                 isPreview: widget.isPreview, onDone: _finish)
             : Stack(fit: StackFit.expand, children: [
-                Positioned(top: -70, right: -60, child: _halo(vehicleTeal, 0)),
                 Positioned(
-                    bottom: 60, left: -80, child: _halo(vehicleBlue, .22)),
+                    top: -70, right: -60, child: _halo(driverHighlight, 0)),
+                Positioned(
+                    bottom: 60, left: -80, child: _halo(driverOutline, .22)),
                 Form(
                   key: _form,
                   child: SingleChildScrollView(
@@ -597,15 +639,35 @@ class _TripFormState extends ConsumerState<TripForm>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    TripNote(widget.isPreview
-                                        ? 'Aperçu local'
-                                        : 'Publication'),
-                                    const TripPill('Brouillon'),
+                                    Expanded(
+                                        child: Row(children: [
+                                      if (Navigator.canPop(context)) ...[
+                                        TripCircleButton(
+                                          tooltip: 'Retour',
+                                          onPressed: _saving
+                                              ? null
+                                              : () =>
+                                                  Navigator.maybePop(context),
+                                          child: const Icon(Icons.chevron_left),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Flexible(
+                                          child: TripNote(widget.isPreview
+                                              ? 'Aperçu local'
+                                              : 'Publication')),
+                                    ])),
+                                    const SizedBox(width: 8),
+                                    TripPill(
+                                        editing ? 'Modification' : 'Brouillon'),
                                   ])),
                           const SizedBox(height: 12),
                           _reveal(
                               1,
-                              Text('Où tu vas ?',
+                              Text(
+                                  editing
+                                      ? 'Modifier le trajet'
+                                      : 'Où tu vas ?',
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleLarge
@@ -632,24 +694,27 @@ class _TripFormState extends ConsumerState<TripForm>
                           if (_error case final error?) ...[
                             const SizedBox(height: 10),
                             Text(error,
-                                style:
-                                    const TextStyle(color: Color(0xffa2402f))),
+                                style: const TextStyle(color: driverError)),
                           ],
                           const SizedBox(height: 12),
                           _reveal(
                               7,
                               TripPress(
                                 child: FilledButton(
-                                  onPressed: _saving ? null : _publish,
+                                  onPressed: _saving ? null : _saveTrip,
                                   style: FilledButton.styleFrom(
                                     minimumSize: const Size.fromHeight(50),
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 14, horizontal: 16),
                                   ),
                                   child: Text(
-                                      _saving
-                                          ? 'Publication…'
-                                          : 'Publier le trajet',
+                                      editing
+                                          ? (_saving
+                                              ? 'Enregistrement…'
+                                              : 'Enregistrer les modifications')
+                                          : (_saving
+                                              ? 'Publication…'
+                                              : 'Publier le trajet'),
                                       style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700)),

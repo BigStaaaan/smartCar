@@ -319,16 +319,16 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                             minimumSize: const Size(38, 44),
                             backgroundColor:
                                 !_customCapacity && selected == count
-                                    ? vehicleOlive
+                                    ? driverAccent
                                     : null,
                             foregroundColor:
                                 !_customCapacity && selected == count
-                                    ? vehicleCream
-                                    : vehicleInk,
+                                    ? driverSurface
+                                    : driverText,
                             side: BorderSide(
                                 color: !_customCapacity && selected == count
-                                    ? vehicleOlive
-                                    : vehicleTeal,
+                                    ? driverAccent
+                                    : driverHighlight,
                                 width: 1.5),
                             shape: const CircleBorder(),
                           ),
@@ -439,7 +439,7 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                   Row(
                     children: [
                       const Icon(Icons.badge_outlined,
-                          size: 24, color: vehicleInk),
+                          size: 24, color: driverText),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -454,7 +454,7 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                                   : 'Image ajoutée',
                               style: TextStyle(
                                   fontSize: 12,
-                                  color: vehicleInk.withValues(alpha: .72)),
+                                  color: driverText.withValues(alpha: .72)),
                             ),
                           ],
                         ),
@@ -496,7 +496,7 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                             child: _RoundButton(
                               tooltip: 'Retirer : Carte grise',
                               icon: Icons.delete_outline,
-                              color: const Color(0xffa2402f),
+                              color: driverError,
                               action: _busy
                                   ? null
                                   : () =>
@@ -563,7 +563,7 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                         child: _RoundButton(
                           tooltip: 'Retirer : Photo du véhicule',
                           icon: Icons.delete_outline,
-                          color: const Color(0xffa2402f),
+                          color: driverError,
                           action: _busy
                               ? null
                               : () => setState(() => _photo = null),
@@ -575,7 +575,7 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                     child: Center(
                       child: Column(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(Icons.photo_camera_outlined,
-                            color: vehicleOlive),
+                            color: driverAccent),
                         const SizedBox(height: 6),
                         Text(picking
                             ? 'Préparation de l’image…'
@@ -638,11 +638,11 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                           const Positioned(
                               top: -110,
                               right: -90,
-                              child: _Halo(color: vehicleTeal)),
+                              child: _Halo(color: driverHighlight)),
                           const Positioned(
                               bottom: -75,
                               left: -95,
-                              child: _Halo(color: vehicleBlue)),
+                              child: _Halo(color: driverOutline)),
                           Column(
                             children: [
                               Expanded(
@@ -674,7 +674,8 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                                                       child: DecoratedBox(
                                                     decoration: BoxDecoration(
                                                       border: Border.all(
-                                                          color: vehicleTeal),
+                                                          color:
+                                                              driverHighlight),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               999),
@@ -715,12 +716,18 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                                 width: double.infinity,
                                 padding:
                                     const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
-                                      colors: [Color(0x00eee7d7), vehicleCream],
-                                      stops: [0, .55]),
+                                      colors: [
+                                        driverSurface.withValues(alpha: 0),
+                                        driverSurface
+                                      ],
+                                      stops: [
+                                        0,
+                                        .55
+                                      ]),
                                 ),
                                 child: _PressScale(
                                   child: FilledButton(
@@ -779,13 +786,7 @@ class _Section extends StatelessWidget {
   final String? title;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: vehicleBlue.withValues(alpha: .24),
-          border: Border.all(color: vehicleBlue.withValues(alpha: .70)),
-          borderRadius: BorderRadius.circular(22),
-        ),
+  Widget build(BuildContext context) => DriverCard(
         child: title == null
             ? child
             : Column(
@@ -819,9 +820,10 @@ class _MediaButton extends StatelessWidget {
       minimumSize: const Size(0, 72),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: filled ? vehicleOlive : Colors.transparent,
-      foregroundColor: filled ? vehicleCream : vehicleInk,
-      side: filled ? null : const BorderSide(color: vehicleTeal, width: 1.5),
+      backgroundColor: filled ? driverAccent : Colors.transparent,
+      foregroundColor: filled ? driverSurface : driverText,
+      side:
+          filled ? null : const BorderSide(color: driverHighlight, width: 1.5),
     );
     return _PressScale(
       child: FilledButton(
@@ -842,7 +844,7 @@ class _RoundButton extends StatelessWidget {
       {required this.tooltip,
       required this.icon,
       this.action,
-      this.color = vehicleInk});
+      this.color = driverText});
 
   final String tooltip;
   final IconData icon;
@@ -855,9 +857,9 @@ class _RoundButton extends StatelessWidget {
           onPressed: action,
           tooltip: tooltip,
           style: IconButton.styleFrom(
-              backgroundColor: vehicleCream,
+              backgroundColor: driverSurface,
               foregroundColor: color,
-              side: const BorderSide(color: vehicleTeal, width: 1.5)),
+              side: const BorderSide(color: driverHighlight, width: 1.5)),
           icon: Icon(icon),
         ),
       );
