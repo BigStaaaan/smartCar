@@ -16,7 +16,7 @@ class VehiclesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicles = ref.watch(vehiclesProvider);
     return Theme(
-      data: vehicleTheme(),
+      data: driverTheme(),
       child: Builder(
         builder: (context) => Scaffold(
           appBar: AppBar(title: const Text('Mode Driver')),
@@ -134,12 +134,6 @@ class _VehicleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
         margin: EdgeInsets.zero,
-        elevation: 0,
-        color: vehicleBlue.withValues(alpha: .24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: const BorderSide(color: vehicleBlue),
-        ),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
           contentPadding:
@@ -155,8 +149,8 @@ class _VehicleCard extends StatelessWidget {
                 ),
               ),
             null => const CircleAvatar(
-                backgroundColor: vehicleTeal,
-                foregroundColor: vehicleInk,
+                backgroundColor: driverHighlight,
+                foregroundColor: driverText,
                 child: Icon(Icons.directions_car_outlined),
               ),
           },
@@ -190,7 +184,7 @@ class _ListMessage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: vehicleOlive, size: 42),
+              Icon(icon, color: driverAccent, size: 42),
               const SizedBox(height: 12),
               Text(title,
                   textAlign: TextAlign.center,

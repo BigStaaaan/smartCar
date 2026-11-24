@@ -12,9 +12,9 @@ class PublishTripPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Theme(
-        data: vehicleTheme(),
+        data: driverTheme(),
         child: Scaffold(
-          backgroundColor: vehicleCream,
+          backgroundColor: driverSurface,
           body: SafeArea(
             child: Center(
               child: ConstrainedBox(

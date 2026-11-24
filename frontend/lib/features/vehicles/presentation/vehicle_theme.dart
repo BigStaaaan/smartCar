@@ -1,61 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-const vehicleCream = Color(0xffeee7d7);
-const vehicleInk = Color(0xff232715);
-const vehicleOlive = Color(0xff4f5330);
-const vehicleTeal = Color(0xff8ccfc9);
-const vehicleBlue = Color(0xffb7c8e0);
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_theme.dart';
 
-ThemeData vehicleTheme() {
-  final base = ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: vehicleOlive,
-      primary: vehicleOlive,
-      onPrimary: vehicleCream,
-      surface: vehicleCream,
-      onSurface: vehicleInk,
+const driverSurface = AppColors.background;
+const driverText = AppColors.onSurface;
+const driverAccent = AppColors.primary;
+const driverOnAccent = AppColors.onPrimary;
+const driverHighlight = AppColors.primaryContainer;
+const driverOutline = AppColors.surfaceStroke;
+const driverError = AppColors.error;
+
+ThemeData driverTheme() {
+  final theme = AppTheme.light;
+  final text = theme.textTheme;
+  return theme.copyWith(
+    textTheme: text.copyWith(
+      displaySmall: text.displayLarge,
+      titleLarge: text.headlineMedium,
+      titleSmall: text.headlineSmall,
     ),
-    scaffoldBackgroundColor: vehicleCream,
-  );
-  return base.copyWith(
-    textTheme: base.textTheme.copyWith(
-      displaySmall: GoogleFonts.instrumentSerif(
-        textStyle: base.textTheme.displaySmall,
-        color: vehicleInk,
-      ),
-      titleLarge: GoogleFonts.bricolageGrotesque(
-        textStyle: base.textTheme.titleLarge,
-        fontWeight: FontWeight.w800,
-      ),
-      bodyMedium: GoogleFonts.bricolageGrotesque(
-        textStyle: base.textTheme.bodyMedium,
-      ),
-      labelLarge: GoogleFonts.bricolageGrotesque(
-        textStyle: base.textTheme.labelLarge,
-        fontWeight: FontWeight.w600,
-      ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: theme.elevatedButtonTheme.style,
     ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: vehicleCream,
-      surfaceTintColor: Colors.transparent,
-      foregroundColor: vehicleInk,
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: const Color(0xfff3eee3),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: vehicleBlue),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: vehicleBlue),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: vehicleOlive, width: 1.5),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: driverText,
+        backgroundColor: AppColors.surfaceContainerLowest,
+        side: const BorderSide(color: driverOutline),
+        shape: const StadiumBorder(),
       ),
     ),
   );
+}
+
+class DriverCard extends StatelessWidget {
+  const DriverCard({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.padding = 20,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final double padding;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(padding: EdgeInsets.all(padding), child: child),
+        ),
+      );
 }

@@ -73,7 +73,7 @@ class _ScanPainter extends CustomPainter {
         const Radius.circular(16),
       ));
     final dash = Paint()
-      ..color = vehicleTeal
+      ..color = driverHighlight
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     final metric = frame.computeMetrics().single;
@@ -90,7 +90,7 @@ class _ScanPainter extends CustomPainter {
     canvas.drawPath(
       line,
       Paint()
-        ..color = vehicleTeal.withValues(alpha: .72)
+        ..color = driverHighlight.withValues(alpha: .72)
         ..strokeWidth = 8
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5)
         ..style = PaintingStyle.stroke,
@@ -128,7 +128,7 @@ class _CheckPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final pen = Paint()
-      ..color = vehicleTeal
+      ..color = driverHighlight
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -141,7 +141,7 @@ class _CheckPainter extends CustomPainter {
     final line = check.computeMetrics().single;
     final fraction = ((progress - .55) / .45).clamp(0.0, 1.0);
     canvas.drawPath(
-        line.extractPath(0, line.length * fraction), pen..color = vehicleOlive);
+        line.extractPath(0, line.length * fraction), pen..color = driverAccent);
   }
 
   @override

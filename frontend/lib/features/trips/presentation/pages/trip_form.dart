@@ -145,7 +145,7 @@ class _TripFormState extends ConsumerState<TripForm>
   Future<void> _chooseVehicle(List<Vehicle> items, Vehicle selected) async {
     final next = await showModalBottomSheet<Vehicle>(
       context: context,
-      backgroundColor: vehicleCream,
+      backgroundColor: driverSurface,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -283,7 +283,7 @@ class _TripFormState extends ConsumerState<TripForm>
           {required bool origin}) =>
       Row(children: [
         Icon(origin ? Icons.radio_button_unchecked : Icons.circle,
-            size: 11, color: vehicleOlive),
+            size: 11, color: driverAccent),
         const SizedBox(width: 8),
         Expanded(
             child: Semantics(
@@ -301,7 +301,7 @@ class _TripFormState extends ConsumerState<TripForm>
                 ?.copyWith(fontWeight: FontWeight.w800),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: vehicleInk.withValues(alpha: .64)),
+              hintStyle: TextStyle(color: driverText.withValues(alpha: .64)),
               filled: false,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 5),
@@ -324,7 +324,7 @@ class _TripFormState extends ConsumerState<TripForm>
         )),
       ]);
 
-  Widget _routeCard() => TripOliveCard(
+  Widget _routeCard() => DriverCard(
         child: Row(children: [
           Expanded(
               child: Column(children: [
@@ -350,7 +350,7 @@ class _TripFormState extends ConsumerState<TripForm>
 
   Widget _vehicleCard(AsyncValue<List<Vehicle>> vehicles, Vehicle? selected) {
     if (selected != null) {
-      return TripOliveCard(
+      return DriverCard(
         onTap: _saving || widget.tripToEdit != null
             ? null
             : () => _chooseVehicle(vehicles.valueOrNull ?? [], selected),
@@ -375,10 +375,10 @@ class _TripFormState extends ConsumerState<TripForm>
       );
     }
     if (vehicles.isLoading) {
-      return const TripOliveCard(child: TripNote('Chargement des véhicules…'));
+      return const DriverCard(child: TripNote('Chargement des véhicules…'));
     }
     if (vehicles.hasError) {
-      return TripOliveCard(
+      return DriverCard(
         child: Row(children: [
           const Expanded(child: Text('Véhicules indisponibles')),
           TextButton(
@@ -388,9 +388,9 @@ class _TripFormState extends ConsumerState<TripForm>
       );
     }
     if (widget.tripToEdit != null) {
-      return const TripOliveCard(child: TripNote('Véhicule indisponible'));
+      return const DriverCard(child: TripNote('Véhicule indisponible'));
     }
-    return TripOliveCard(
+    return DriverCard(
       child: Row(children: [
         const Expanded(child: Text('Aucun véhicule disponible')),
         if (widget.isPreview)
@@ -506,7 +506,7 @@ class _TripFormState extends ConsumerState<TripForm>
             padding: EdgeInsets.only(top: 4),
             child: Text(
               'Choisissez une date et une heure de départ futures.',
-              style: TextStyle(color: Color(0xffa2402f), fontSize: 12),
+              style: TextStyle(color: driverError, fontSize: 12),
             ),
           ),
       ],
@@ -562,9 +562,9 @@ class _TripFormState extends ConsumerState<TripForm>
               trackHeight: 6,
               trackShape: const RoundedRectSliderTrackShape(),
               tickMarkShape: SliderTickMarkShape.noTickMark,
-              activeTrackColor: vehicleTeal,
-              inactiveTrackColor: vehicleTeal,
-              thumbColor: vehicleOlive,
+              activeTrackColor: driverHighlight,
+              inactiveTrackColor: driverHighlight,
+              thumbColor: driverAccent,
               thumbShape: const TripSliderThumb(),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 17),
               showValueIndicator: ShowValueIndicator.never,
@@ -622,9 +622,10 @@ class _TripFormState extends ConsumerState<TripForm>
             ? TripPublishConfirmation(
                 isPreview: widget.isPreview, onDone: _finish)
             : Stack(fit: StackFit.expand, children: [
-                Positioned(top: -70, right: -60, child: _halo(vehicleTeal, 0)),
                 Positioned(
-                    bottom: 60, left: -80, child: _halo(vehicleBlue, .22)),
+                    top: -70, right: -60, child: _halo(driverHighlight, 0)),
+                Positioned(
+                    bottom: 60, left: -80, child: _halo(driverOutline, .22)),
                 Form(
                   key: _form,
                   child: SingleChildScrollView(
@@ -693,8 +694,7 @@ class _TripFormState extends ConsumerState<TripForm>
                           if (_error case final error?) ...[
                             const SizedBox(height: 10),
                             Text(error,
-                                style:
-                                    const TextStyle(color: Color(0xffa2402f))),
+                                style: const TextStyle(color: driverError)),
                           ],
                           const SizedBox(height: 12),
                           _reveal(

@@ -57,7 +57,7 @@ class VehicleImagePreview extends StatelessWidget {
     final image = ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: ColoredBox(
-        color: vehicleBlue.withValues(alpha: .24),
+        color: driverOutline.withValues(alpha: .24),
         child: SizedBox.expand(child: _image(fit)),
       ),
     );
