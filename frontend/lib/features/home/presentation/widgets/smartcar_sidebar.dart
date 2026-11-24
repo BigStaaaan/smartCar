@@ -47,6 +47,7 @@ class SmartCarSidebar extends ConsumerWidget {
     final shouldDisconnect = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        actionsAlignment: MainAxisAlignment.center,
         title: const Text('Disconnect'),
         content: const Text(
           'Are you sure you want to disconnect from your SmartCar account?',
