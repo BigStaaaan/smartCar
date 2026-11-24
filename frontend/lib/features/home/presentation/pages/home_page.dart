@@ -99,11 +99,17 @@ class _HomePageState extends ConsumerState<HomePage> {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final isDriver = user?.activeMode == 'DRIVER';
+    final isWideScreen = MediaQuery.sizeOf(context).width >= 900;
+    final bodyContent =
+        isDriver ? const _DriverDashboard() : const _PassengerDashboard();
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      drawer: const SmartCarSidebar(selectedLabel: 'Tableau de bord'),
+      drawer: isWideScreen
+          ? null
+          : const SmartCarSidebar(selectedLabel: 'Dashboard'),
       appBar: AppBar(
+        automaticallyImplyLeading: !isWideScreen,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -122,7 +128,17 @@ class _HomePageState extends ConsumerState<HomePage> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
       ),
-      body: isDriver ? const _DriverDashboard() : const _PassengerDashboard(),
+      body: isWideScreen
+          ? Row(
+              children: [
+                const SmartCarSidebar(
+                  selectedLabel: 'Dashboard',
+                  isPersistent: true,
+                ),
+                Expanded(child: bodyContent),
+              ],
+            )
+          : bodyContent,
     );
   }
 }
