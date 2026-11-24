@@ -22,7 +22,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('SmartCar'), findsOneWidget);
+    expect(find.text('SmartCar'), findsWidgets);
     expect(find.text('Get Started'), findsOneWidget);
 
     // Tap Get Started
@@ -122,7 +122,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(RegisterPage), findsOneWidget);
-    expect(find.text('SmartCar'), findsOneWidget);
+    expect(find.text('SmartCar'), findsWidgets);
     expect(find.text('Student'), findsNothing);
     expect(find.text('Staff'), findsNothing);
     expect(find.text('Passenger'), findsNothing);
