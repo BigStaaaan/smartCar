@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../shared/widgets/smartcar_logo.dart';
 import '../../../../core/validators/email_validator.dart';
 import '../../../../core/validators/required_validator.dart';
 import '../../../../core/widgets/auth_error_dialog.dart';
@@ -276,67 +277,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'SmartCar',
-                                  style: AppTypography.headlineSm.copyWith(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: AppColors.brandIndigo,
-                                    backgroundColor: Colors.white,
-                                    minimumSize: const Size(86, 38),
-                                    shape: const StadiumBorder(
-                                      side: BorderSide(
-                                        color: AppColors.outlineVariant,
-                                      ),
-                                    ),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('Log In',
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700)),
-                                      SizedBox(width: 5),
-                                      Icon(Icons.arrow_forward_rounded,
-                                          size: 15),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                            const SmartCarLogo(
+                              variant: SmartCarLogoVariant.horizontal,
+                              symbolSize: 28,
+                              wordmarkFontSize: 18,
                             ),
-                            const SizedBox(height: 14),
-                            Container(
-                              height: 18,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: AppColors.secondaryFixed,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.verified_rounded,
-                                      size: 11, color: AppColors.brandIndigo),
-                                  SizedBox(width: 5),
-                                  Text('Verified Student Network',
-                                      style: TextStyle(
-                                          color: AppColors.brandIndigo,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700)),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 18),
                             Text.rich(
                               const TextSpan(
                                 children: [
