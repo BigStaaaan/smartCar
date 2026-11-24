@@ -316,6 +316,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               decoration: _fieldBox,
                               child: TextFormField(
                                 controller: _nameController,
+                                style: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontSize: 14,
+                                ),
                                 validator: (value) =>
                                     value == null || value.trim().isEmpty
                                         ? 'Please enter your full name'
@@ -436,6 +440,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               decoration: _fieldBox,
                               child: TextFormField(
                                 controller: _emailController,
+                                style: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontSize: 14,
+                                ),
                                 validator: EmailValidator.validate,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: _inputDecoration(
@@ -453,6 +461,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               decoration: _fieldBox,
                               child: TextFormField(
                                 controller: _passwordController,
+                                style: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontSize: 14,
+                                ),
                                 validator: RequiredValidator.validatePassword,
                                 obscureText: _obscurePassword,
                                 onChanged: (_) => setState(() {}),
