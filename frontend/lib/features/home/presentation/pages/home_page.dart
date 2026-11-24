@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../shared/widgets/smartcar_logo.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../university_verification/presentation/pages/university_verification_page.dart';
 import '../widgets/smartcar_sidebar.dart';
@@ -103,9 +104,19 @@ class _HomePageState extends ConsumerState<HomePage> {
       backgroundColor: AppColors.background,
       drawer: const SmartCarSidebar(selectedLabel: 'Tableau de bord'),
       appBar: AppBar(
-        title: Text(
-          isDriver ? 'Driver Dashboard' : 'Passenger Dashboard',
-          style: AppTypography.headlineSm,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SmartCarLogo(
+              variant: SmartCarLogoVariant.iconOnly,
+              symbolSize: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isDriver ? 'Driver Dashboard' : 'Passenger Dashboard',
+              style: AppTypography.headlineSm,
+            ),
+          ],
         ),
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
