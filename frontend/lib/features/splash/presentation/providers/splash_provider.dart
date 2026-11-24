@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum SplashDestination {
@@ -43,6 +44,7 @@ class SplashState {
 typedef ConnectivityChecker = Future<bool> Function();
 
 Future<bool> _defaultConnectivityCheck() async {
+  if (kIsWeb) return true;
   try {
     final result = await InternetAddress.lookup('google.com')
         .timeout(const Duration(seconds: 4));
