@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../shared/widgets/smartcar_logo.dart';
+import '../../../authentication/presentation/pages/login_page.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/pages/edit_profile_page.dart';
 import '../../../trips/presentation/pages/my_trips_page.dart';
@@ -39,6 +40,40 @@ class SmartCarSidebar extends ConsumerWidget {
         content: Text('$title is coming soon.'),
         behavior: SnackBarBehavior.floating,
       ),
+    );
+  }
+
+  Future<void> _confirmDisconnect(BuildContext context, WidgetRef ref) async {
+    final shouldDisconnect = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Disconnect'),
+        content: const Text(
+          'Are you sure you want to disconnect from your SmartCar account?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Stay Connected'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDisconnect != true || !context.mounted) return;
+    await ref.read(authProvider.notifier).signOut();
+    if (!context.mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const LoginPage()),
+      (_) => false,
     );
   }
 
@@ -310,6 +345,35 @@ class SmartCarSidebar extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          // Disconnect button under Passenger / Driver Mode
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: authState.isLoading
+                    ? null
+                    : () => _confirmDisconnect(context, ref),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.logout_rounded, size: 18),
+                label: Text(
+                  'Disconnect',
+                  style: AppTypography.bodySm.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
           ),
