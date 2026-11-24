@@ -5,6 +5,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../shared/widgets/smartcar_logo.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../profile/presentation/pages/edit_profile_page.dart';
 import '../../../trips/presentation/pages/my_trips_page.dart';
 import '../../../university_verification/presentation/pages/university_verification_page.dart';
 
@@ -13,10 +14,12 @@ class SmartCarSidebar extends ConsumerWidget {
     super.key,
     required this.selectedLabel,
     this.isPersistent = false,
+    this.onSwitchMode,
   });
 
   final String selectedLabel;
   final bool isPersistent;
+  final VoidCallback? onSwitchMode;
 
   void _navigateTo(BuildContext context, Widget page) {
     if (!isPersistent) {
@@ -51,6 +54,7 @@ class SmartCarSidebar extends ConsumerWidget {
     final photoUrl = user?.photoUrl;
     final isVerified = (user?.isUniversityVerified ?? false) ||
         (user?.isVerifiedStudent ?? false);
+    final isDriver = user?.activeMode == 'DRIVER';
 
     final content = SafeArea(
       child: Column(
@@ -79,77 +83,90 @@ class SmartCarSidebar extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLowest,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _navigateTo(context, const EditProfilePage()),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.surfaceStroke),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                        backgroundImage:
-                            (photoUrl != null && photoUrl.isNotEmpty)
-                                ? NetworkImage(photoUrl)
-                                : null,
-                        child: (photoUrl == null || photoUrl.isEmpty)
-                            ? Text(
-                                firstName.isNotEmpty
-                                    ? firstName[0].toUpperCase()
-                                    : 'S',
-                                style: AppTypography.bodyLg.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              )
-                            : null,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.surfaceStroke),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    firstName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 22,
+                            backgroundColor:
+                                AppColors.primary.withValues(alpha: 0.12),
+                            backgroundImage:
+                                (photoUrl != null && photoUrl.isNotEmpty)
+                                    ? NetworkImage(photoUrl)
+                                    : null,
+                            child: (photoUrl == null || photoUrl.isEmpty)
+                                ? Text(
+                                    firstName.isNotEmpty
+                                        ? firstName[0].toUpperCase()
+                                        : 'S',
                                     style: AppTypography.bodyLg.copyWith(
-                                      color: AppColors.onSurface,
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.w700,
                                     ),
-                                  ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        firstName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTypography.bodyLg.copyWith(
+                                          color: AppColors.onSurface,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isVerified) ...[
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.verified_rounded,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                                if (isVerified) ...[
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.verified_rounded,
-                                    size: 16,
-                                    color: AppColors.primary,
+                                if (email.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    email,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.bodySm.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
                                   ),
                                 ],
                               ],
                             ),
-                            if (email.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                email,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTypography.bodySm.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -165,12 +182,10 @@ class SmartCarSidebar extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               children: [
                 _SidebarItem(
-                  icon: Icons.space_dashboard_rounded,
-                  label: 'Dashboard',
-                  selected: selectedLabel == 'Dashboard',
-                  onTap: () {
-                    if (!isPersistent) Navigator.of(context).pop();
-                  },
+                  icon: Icons.person_outline_rounded,
+                  label: 'profile',
+                  selected: selectedLabel == 'profile',
+                  onTap: () => _navigateTo(context, const EditProfilePage()),
                 ),
                 _SidebarItem(
                   icon: Icons.history_rounded,
@@ -206,6 +221,96 @@ class SmartCarSidebar extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          // Dedicated Passenger / Driver Mode Switch
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.surfaceStroke),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          isDriver
+                              ? Icons.directions_car_rounded
+                              : Icons.person_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          isDriver ? 'Driver Mode' : 'Passenger Mode',
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: FilledButton.icon(
+                      onPressed: authState.isLoading
+                          ? null
+                          : () {
+                              if (!isPersistent) {
+                                Navigator.of(context).pop();
+                              }
+                              if (onSwitchMode != null) {
+                                onSwitchMode!();
+                              } else {
+                                ref.read(authProvider.notifier).switchMode(
+                                      isDriver ? 'PASSENGER' : 'DRIVER',
+                                    );
+                              }
+                            },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: Icon(
+                        isDriver
+                            ? Icons.person_rounded
+                            : Icons.directions_car_rounded,
+                        size: 18,
+                      ),
+                      label: Text(
+                        isDriver
+                            ? 'Switch to Passenger Mode'
+                            : 'Switch to Driver Mode',
+                        style: AppTypography.bodySm.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
