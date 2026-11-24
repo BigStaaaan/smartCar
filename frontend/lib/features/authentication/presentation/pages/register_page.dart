@@ -83,8 +83,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (bytes.lengthInBytes > 5 * 1024 * 1024) {
         await showAuthErrorDialog(
           context,
-          'Votre carte étudiant doit faire moins de 5 MB.',
-          title: 'Image trop volumineuse',
+          'Your student ID card must be smaller than 5 MB.',
+          title: 'Image Too Large',
         );
         return;
       }
@@ -100,16 +100,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (_studentCard == null) {
       await showAuthErrorDialog(
         context,
-        'Ajoutez une photo de votre carte étudiant pour envoyer la demande de vérification.',
-        title: 'Carte étudiant requise',
+        'Please add a photo of your student ID card to submit the verification request.',
+        title: 'Student Card Required',
       );
       return;
     }
     if (!_acceptedTerms) {
       await showAuthErrorDialog(
         context,
-        'Vous devez accepter les règles de covoiturage avant de créer votre compte.',
-        title: 'Conditions requises',
+        'You must accept the carpooling rules before creating your account.',
+        title: 'Terms Required',
       );
       return;
     }
@@ -138,7 +138,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       await showAuthErrorDialog(
         context,
         message,
-        title: 'Création du compte impossible',
+        title: 'Account Creation Failed',
       );
     }
   }
@@ -147,8 +147,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (_studentCard == null) {
       await showAuthErrorDialog(
         context,
-        'Ajoutez une photo de votre carte étudiant avant de continuer.',
-        title: 'Carte étudiant requise',
+        'Please add a photo of your student ID card before continuing.',
+        title: 'Student Card Required',
       );
       return;
     }
@@ -167,7 +167,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       await showAuthErrorDialog(
         context,
         message,
-        title: 'Connexion Google impossible',
+        title: 'Google Sign-In Failed',
       );
     }
   }
