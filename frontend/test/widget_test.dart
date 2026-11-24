@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:smartcar/app/app.dart';
 import 'package:smartcar/features/authentication/presentation/pages/login_page.dart';
 import 'package:smartcar/features/authentication/presentation/pages/register_page.dart';
+import 'package:smartcar/features/onboarding/presentation/pages/onboarding_page.dart';
 
 void main() {
   testWidgets(
@@ -13,8 +13,14 @@ void main() {
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(const ProviderScope(child: SmartCarApp()));
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: OnboardingPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('SmartCar'), findsOneWidget);
     expect(find.text('Get Started'), findsOneWidget);
