@@ -107,7 +107,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       backgroundColor: AppColors.background,
       drawer: isWideScreen
           ? null
-          : const SmartCarSidebar(selectedLabel: 'Dashboard'),
+          : SmartCarSidebar(
+              selectedLabel: 'profile',
+              onSwitchMode: _switchMode,
+            ),
       appBar: AppBar(
         automaticallyImplyLeading: !isWideScreen,
         title: Row(
@@ -131,9 +134,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       body: isWideScreen
           ? Row(
               children: [
-                const SmartCarSidebar(
-                  selectedLabel: 'Dashboard',
+                SmartCarSidebar(
+                  selectedLabel: 'profile',
                   isPersistent: true,
+                  onSwitchMode: _switchMode,
                 ),
                 Expanded(child: bodyContent),
               ],
