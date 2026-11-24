@@ -9,8 +9,7 @@ class TripNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style:
-            TextStyle(fontSize: 11, color: vehicleInk.withValues(alpha: .64)),
+        style: Theme.of(context).textTheme.labelSmall,
       );
 }
 
@@ -21,7 +20,7 @@ class TripPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
-          border: Border.all(color: vehicleTeal),
+          border: Border.all(color: driverHighlight),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Padding(
@@ -29,26 +28,6 @@ class TripPill extends StatelessWidget {
           child: Text(text,
               style:
                   const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
-        ),
-      );
-}
-
-class TripOliveCard extends StatelessWidget {
-  const TripOliveCard({super.key, required this.child, this.onTap});
-  final Widget child;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => Material(
-        color: vehicleBlue.withValues(alpha: .24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: vehicleBlue.withValues(alpha: .7)),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(padding: const EdgeInsets.all(14), child: child),
         ),
       );
 }
@@ -68,11 +47,11 @@ class TripCircleButton extends StatelessWidget {
           child: OutlinedButton(
             onPressed: onPressed,
             style: OutlinedButton.styleFrom(
-              foregroundColor: vehicleInk,
+              foregroundColor: driverText,
               fixedSize: const Size.square(38),
               minimumSize: Size.zero,
               padding: EdgeInsets.zero,
-              side: const BorderSide(color: vehicleTeal, width: 1.5),
+              side: const BorderSide(color: driverHighlight, width: 1.5),
               shape: const CircleBorder(),
             ),
             child: child,
@@ -93,7 +72,7 @@ class TripDaySegment extends StatelessWidget {
         height: 34,
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          border: Border.all(color: vehicleTeal),
+          border: Border.all(color: driverHighlight),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Stack(
@@ -111,7 +90,8 @@ class TripDaySegment extends StatelessWidget {
                 heightFactor: 1,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: selected == null ? Colors.transparent : vehicleTeal,
+                    color:
+                        selected == null ? Colors.transparent : driverHighlight,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -170,10 +150,10 @@ class TripSeat extends StatelessWidget {
               minimumSize: Size.zero,
               fixedSize: const Size.square(46),
               padding: EdgeInsets.zero,
-              backgroundColor: filled ? vehicleOlive : Colors.transparent,
-              foregroundColor: filled ? vehicleCream : vehicleInk,
+              backgroundColor: filled ? driverAccent : Colors.transparent,
+              foregroundColor: filled ? driverOnAccent : driverText,
               side: BorderSide(
-                  color: filled ? vehicleOlive : vehicleTeal, width: 1.5),
+                  color: filled ? driverAccent : driverHighlight, width: 1.5),
               shape: const CircleBorder(),
               textStyle: const TextStyle(fontWeight: FontWeight.w800),
             ),
@@ -205,9 +185,9 @@ class TripSliderThumb extends SliderComponentShape {
     required Size sizeWithOverflow,
   }) {
     final canvas = context.canvas;
-    canvas.drawCircle(center, 14, Paint()..color = vehicleOlive);
-    canvas.drawCircle(center, 13, Paint()..color = vehicleCream);
-    canvas.drawCircle(center, 9, Paint()..color = vehicleOlive);
+    canvas.drawCircle(center, 14, Paint()..color = driverAccent);
+    canvas.drawCircle(center, 13, Paint()..color = driverSurface);
+    canvas.drawCircle(center, 9, Paint()..color = driverAccent);
   }
 }
 
@@ -288,10 +268,10 @@ class _VehiclePainter extends CustomPainter {
       ..lineTo(8, 68)
       ..close();
     final outline = Paint()
-      ..color = vehicleInk
+      ..color = driverText
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
-    canvas.drawPath(route, Paint()..color = const Color(0xfffbf8f0));
+    canvas.drawPath(route, Paint()..color = driverSurface);
     canvas.drawPath(route, outline);
     final windows = Path()
       ..moveTo(62, 44)
@@ -304,11 +284,11 @@ class _VehiclePainter extends CustomPainter {
       ..lineTo(128, 28)
       ..lineTo(144, 44)
       ..close();
-    canvas.drawPath(windows, Paint()..color = vehicleBlue);
+    canvas.drawPath(windows, Paint()..color = driverOutline);
     canvas.drawPath(windows, outline);
     for (final x in [52.0, 150.0]) {
-      canvas.drawCircle(Offset(x, 68), 13, Paint()..color = vehicleInk);
-      canvas.drawCircle(Offset(x, 68), 5, Paint()..color = vehicleTeal);
+      canvas.drawCircle(Offset(x, 68), 13, Paint()..color = driverText);
+      canvas.drawCircle(Offset(x, 68), 5, Paint()..color = driverHighlight);
     }
   }
 
