@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/vehicle.dart';
+import '../../../shared/widgets/smartcar_logo.dart';
 import 'vehicle_form_page.dart';
 import 'vehicle_images.dart';
 import 'vehicle_provider.dart';
@@ -19,7 +20,19 @@ class VehiclesPage extends ConsumerWidget {
       data: driverTheme(),
       child: Builder(
         builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Mode Driver')),
+          appBar: AppBar(
+            title: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SmartCarLogo(
+                  variant: SmartCarLogoVariant.iconOnly,
+                  symbolSize: 28,
+                ),
+                SizedBox(width: 8),
+                Text('Mode Driver'),
+              ],
+            ),
+          ),
           body: SafeArea(
             child: Center(
               child: ConstrainedBox(
@@ -258,7 +271,19 @@ class _VehicleDetailsPageState extends ConsumerState<_VehicleDetailsPage> {
     return PopScope(
       canPop: !_deleting,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Détail du véhicule')),
+        appBar: AppBar(
+          title: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SmartCarLogo(
+                variant: SmartCarLogoVariant.iconOnly,
+                symbolSize: 28,
+              ),
+              SizedBox(width: 8),
+              Text('Détail du véhicule'),
+            ],
+          ),
+        ),
         body: SafeArea(
           child: Center(
             child: ConstrainedBox(
