@@ -58,7 +58,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } else {
       final errorMessage =
           ref.read(authProvider).errorMessage ?? 'Login failed. Please try again.';
-      await showAuthErrorDialog(context, errorMessage, title: 'Connexion impossible');
+      await showAuthErrorDialog(context, errorMessage, title: 'Sign In Failed');
     }
   }
 
@@ -82,7 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await showAuthErrorDialog(
         context,
         errorMessage,
-        title: 'Connexion Google impossible',
+        title: 'Google Sign-In Failed',
       );
     }
   }
