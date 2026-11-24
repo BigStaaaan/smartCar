@@ -70,9 +70,11 @@ class SmartCarSidebar extends ConsumerWidget {
     );
 
     if (shouldDisconnect != true || !context.mounted) return;
-    await ref.read(authProvider.notifier).signOut();
-    if (!context.mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
+    final navigator = Navigator.of(context, rootNavigator: true);
+    try {
+      await ref.read(authProvider.notifier).signOut();
+    } catch (_) {}
+    navigator.pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => const LoginPage()),
       (_) => false,
     );
