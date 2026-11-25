@@ -9,8 +9,8 @@ class DriverAvatar extends StatelessWidget {
     this.photoUrl,
     this.size = 36,
     this.fontSize,
-    this.background = vehicleTeal,
-    this.foreground = vehicleInk,
+    this.background = driverHighlight,
+    this.foreground = driverText,
   });
 
   final String initial;
@@ -39,7 +39,7 @@ class DriverAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         shape: BoxShape.circle,
-        border: Border.all(color: vehicleCream, width: 2),
+        border: Border.all(color: driverSurface, width: 2),
       ),
       child: hasPhoto
           ? ClipOval(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../shared/widgets/smartcar_logo.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../university_verification/presentation/pages/university_verification_page.dart';
 import '../widgets/smartcar_sidebar.dart';
@@ -98,20 +99,50 @@ class _HomePageState extends ConsumerState<HomePage> {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final isDriver = user?.activeMode == 'DRIVER';
+    final isWideScreen = MediaQuery.sizeOf(context).width >= 900;
+    final bodyContent =
+        isDriver ? const _DriverDashboard() : const _PassengerDashboard();
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      drawer: const SmartCarSidebar(selectedLabel: 'Tableau de bord'),
+      drawer: isWideScreen
+          ? null
+          : SmartCarSidebar(
+              selectedLabel: 'profile',
+              onSwitchMode: _switchMode,
+            ),
       appBar: AppBar(
-        title: Text(
-          isDriver ? 'Driver Dashboard' : 'Passenger Dashboard',
-          style: AppTypography.headlineSm,
+        automaticallyImplyLeading: !isWideScreen,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SmartCarLogo(
+              variant: SmartCarLogoVariant.iconOnly,
+              symbolSize: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isDriver ? 'Driver Dashboard' : 'Passenger Dashboard',
+              style: AppTypography.headlineSm,
+            ),
+          ],
         ),
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
       ),
-      body: isDriver ? const _DriverDashboard() : const _PassengerDashboard(),
+      body: isWideScreen
+          ? Row(
+              children: [
+                SmartCarSidebar(
+                  selectedLabel: 'profile',
+                  isPersistent: true,
+                  onSwitchMode: _switchMode,
+                ),
+                Expanded(child: bodyContent),
+              ],
+            )
+          : bodyContent,
     );
   }
 }

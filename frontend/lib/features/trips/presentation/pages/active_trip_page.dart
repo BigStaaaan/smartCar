@@ -24,10 +24,10 @@ class ActiveTripPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final passengers = trip.confirmedPassengerNames;
     return Theme(
-      data: vehicleTheme(),
+      data: driverTheme(),
       child: Builder(
         builder: (context) => Scaffold(
-          backgroundColor: vehicleCream,
+          backgroundColor: driverSurface,
           body: SafeArea(
             child: Center(
               child: ConstrainedBox(
@@ -50,7 +50,7 @@ class ActiveTripPage extends StatelessWidget {
                     Text('Trajet en cours',
                         style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 14),
-                    TripOliveCard(
+                    DriverCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -69,7 +69,7 @@ class ActiveTripPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    TripOliveCard(
+                    DriverCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

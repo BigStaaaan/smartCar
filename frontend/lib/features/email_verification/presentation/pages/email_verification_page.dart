@@ -24,7 +24,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
         DateTime.now().difference(_lastResendAt!) <
             const Duration(seconds: 60)) {
       setState(
-        () => _message = 'Veuillez attendre avant de demander un nouveau lien.',
+        () => _message = 'Please wait before requesting a new link.',
       );
       return;
     }
@@ -38,10 +38,10 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             'Lien de verification renvoye sur votre adresse universitaire.',
       );
     } on FirebaseAuthException catch (error) {
-      String message = error.message ?? 'Impossible de renvoyer le lien.';
+      String message = error.message ?? 'Unable to resend verification link.';
       if (error.code == 'too-many-requests') {
         message =
-            'Trop de demandes. Attendez quelques minutes avant de renvoyer.';
+            'Too many requests. Please wait a few minutes before resending.';
       }
       setState(() => _message = message);
     } finally {
@@ -156,7 +156,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                         minimumSize: const Size.fromHeight(48),
                         shape: const StadiumBorder(),
                       ),
-                      child: const Text('Renvoyer le lien'),
+                      child: const Text('Resend Link'),
                     ),
                     TextButton(
                       onPressed: () async {
@@ -165,7 +165,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                           Navigator.of(context).pop();
                         }
                       },
-                      child: const Text('Changer dÃ¢â‚¬â„¢adresse / Retour'),
+                      child: const Text('Change Email / Back'),
                     ),
                   ],
                 ),

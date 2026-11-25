@@ -7,15 +7,21 @@ import '../../../trips/presentation/pages/publish_trip_page.dart';
 import '../../../trips/presentation/pages/trip_details_page.dart';
 import '../../../trips/presentation/providers/trip_provider.dart';
 import '../../../vehicles/presentation/vehicles_page.dart';
+import '../../data/driver_reservation_repository.dart';
 import 'driver_dashboard_page.dart';
+import 'driver_reservation_requests_page.dart';
 
 /// Composes the Driver routes within the repository scope supplied by the host.
 class DriverHomePage extends ConsumerWidget {
   const DriverHomePage(
-      {super.key, this.isPreview = false, this.driverPhotoUrl});
+      {super.key,
+      this.isPreview = false,
+      this.driverPhotoUrl,
+      this.reservationRepository});
 
   final bool isPreview;
   final String? driverPhotoUrl;
+  final DriverReservationRepository? reservationRepository;
 
   Future<void> _openPublication(BuildContext context) =>
       Navigator.of(context).push<void>(MaterialPageRoute(
@@ -37,7 +43,14 @@ class DriverHomePage extends ConsumerWidget {
     final featured =
         inProgress.firstOrNull ?? ready.firstOrNull ?? upcoming.firstOrNull;
 
+    final requests = reservationRepository;
     return DriverDashboardPage(
+      onRequests: requests == null
+          ? null
+          : () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => DriverReservationRequestsPage(
+                    repository: requests, isPreview: isPreview),
+              )),
       driverPhotoUrl: driverPhotoUrl,
       tripOverview: (
         featured: featured,

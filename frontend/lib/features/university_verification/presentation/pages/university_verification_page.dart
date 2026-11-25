@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../shared/widgets/smartcar_logo.dart';
 
 class UniversityVerificationPage extends StatefulWidget {
   const UniversityVerificationPage({super.key});
@@ -269,7 +270,19 @@ class _UniversityVerificationPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('University verification')),
+      appBar: AppBar(
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SmartCarLogo(
+              variant: SmartCarLogoVariant.iconOnly,
+              symbolSize: 28,
+            ),
+            SizedBox(width: 8),
+            Text('University verification'),
+          ],
+        ),
+      ),
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

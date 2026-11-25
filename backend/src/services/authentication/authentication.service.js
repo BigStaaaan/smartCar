@@ -68,7 +68,62 @@ const User = sequelize.models.User || sequelize.define('User', {
 
 async function ensureSchema() {
   await sequelize.authenticate();
+  await ensureUserColumns();
   await User.sync();
+}
+
+async function ensureUserColumns() {
+  const queryInterface = sequelize.getQueryInterface();
+  let columns;
+  try {
+    columns = await queryInterface.describeTable('users');
+  } catch (error) {
+    if (error?.original?.errno === 1146) return;
+    throw error;
+  }
+
+  const addColumn = async (name, definition) => {
+    if (!columns[name]) {
+      await queryInterface.addColumn('users', name, definition);
+      columns[name] = {};
+    }
+  };
+
+  await addColumn('student_card_url', {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+  });
+  await addColumn('verification_status', {
+    type: DataTypes.ENUM(
+      'NOT_SUBMITTED',
+      'PENDING',
+      'APPROVED',
+      'REJECTED',
+      'REQUIRES_RESUBMISSION',
+    ),
+    allowNull: false,
+    defaultValue: 'NOT_SUBMITTED',
+  });
+  await addColumn('student_id', { type: DataTypes.STRING, allowNull: true });
+  await addColumn('faculty', { type: DataTypes.STRING, allowNull: true });
+  await addColumn('department', { type: DataTypes.STRING, allowNull: true });
+  await addColumn('submitted_at', { type: DataTypes.DATE, allowNull: true });
+  await addColumn('reviewed_at', { type: DataTypes.DATE, allowNull: true });
+  await addColumn('rejection_reason', { type: DataTypes.TEXT, allowNull: true });
+  await addColumn('role', {
+    type: DataTypes.ENUM('PASSENGER', 'DRIVER'),
+    allowNull: false,
+    defaultValue: 'PASSENGER',
+  });
+  await addColumn('active_mode', {
+    type: DataTypes.ENUM('PASSENGER', 'DRIVER'),
+    allowNull: false,
+    defaultValue: 'PASSENGER',
+  });
+  await addColumn('driver_profile', {
+    type: DataTypes.JSON,
+    allowNull: true,
+  });
 }
 
 function saveStudentCard(firebaseUid, body) {
@@ -95,6 +150,21 @@ function saveStudentCard(firebaseUid, body) {
   }
   if (!bytes.length || bytes.length > 5 * 1024 * 1024) {
     const error = new Error('Student card image must be smaller than 5 MB.');
+    error.statusCode = 400;
+    throw error;
+  }
+  const isJpeg = bytes.length >= 3 &&
+    bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const isPng = bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes.subarray(1, 4).toString() === 'PNG';
+  const isWebp = bytes.length >= 12 &&
+    bytes.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    bytes.subarray(8, 12).toString('ascii') === 'WEBP';
+  if (!isJpeg && !isPng && !isWebp) {
+    const error = new Error(
+      'The uploaded student card is not a valid JPG, PNG or WEBP image.',
+    );
     error.statusCode = 400;
     throw error;
   }

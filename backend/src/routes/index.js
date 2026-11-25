@@ -5,4 +5,7 @@ router.get('/health', (req, res) => res.json({ status: 'ok', service: 'smartcar-
 router.use('/auth', require('./authentication/authentication.routes'));
 router.use('/verification', require('../modules/university-verification/verification.routes'));
 
+router.use('/vehicles', require('./vehicles/vehicles.routes'));
+router.use('/trips', require('./trips/trips.routes'));
+
 module.exports = router;
