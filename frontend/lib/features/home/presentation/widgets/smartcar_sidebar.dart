@@ -1,288 +1,410 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_typography.dart';
+import '../../../../shared/widgets/smartcar_logo.dart';
+import '../../../authentication/presentation/pages/login_page.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../profile/presentation/pages/edit_profile_page.dart';
 import '../../../trips/presentation/pages/my_trips_page.dart';
-import '../../../trips/presentation/pages/publish_trip_page.dart';
 import '../../../university_verification/presentation/pages/university_verification_page.dart';
-import '../../../vehicles/presentation/vehicles_page.dart';
 
 class SmartCarSidebar extends ConsumerWidget {
   const SmartCarSidebar({
     super.key,
     required this.selectedLabel,
+    this.isPersistent = false,
+    this.onSwitchMode,
   });
 
   final String selectedLabel;
+  final bool isPersistent;
+  final VoidCallback? onSwitchMode;
 
-  static const _primary = Color(0xFF0096FF);
-  static const _primaryDark = Color(0xFF0877C9);
-  static const _canvas = Color(0xFFF7F9FC);
-  static const _ink = Color(0xFF263238);
-  static const _muted = Color(0xFF888888);
-  static const _border = Color(0xFFE8EDF2);
-
-  void _closeAndPush(BuildContext context, Widget page) {
-    Navigator.of(context).pop();
+  void _navigateTo(BuildContext context, Widget page) {
+    if (!isPersistent) {
+      Navigator.of(context).pop();
+    }
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => page),
     );
+  }
+
+  void _showPlaceholder(BuildContext context, String title) {
+    if (!isPersistent) {
+      Navigator.of(context).pop();
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$title is coming soon.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _confirmDisconnect(BuildContext context, WidgetRef ref) async {
+    final shouldDisconnect = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        actionsAlignment: MainAxisAlignment.center,
+        title: const Text('Disconnect'),
+        content: const Text(
+          'Are you sure you want to disconnect from your SmartCar account?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Stay Connected'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDisconnect != true || !context.mounted) return;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final authNotifier = ref.read(authProvider.notifier);
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const LoginPage()),
+      (_) => false,
+    );
+    try {
+      await authNotifier.signOut();
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
-    final isDriver = user?.activeMode == 'DRIVER';
-    final firstName = user?.displayName?.trim().isNotEmpty == true
-        ? user!.displayName!.trim().split(' ').first
-        : 'Utilisateur';
 
-    return Drawer(
-      width: 292,
-      backgroundColor: _canvas,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 16, 14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: _primary,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x1A0096FF),
-                          blurRadius: 14,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
+    final rawName = user?.displayName?.trim() ?? '';
+    final firstName =
+        rawName.isNotEmpty ? rawName.split(RegExp(r'\s+')).first : 'Student';
+    final email = user?.email ?? '';
+    final photoUrl = user?.photoUrl;
+    final isVerified = (user?.isUniversityVerified ?? false) ||
+        (user?.isVerifiedStudent ?? false);
+    final isDriver = user?.activeMode == 'DRIVER';
+
+    final content = SafeArea(
+      child: Column(
+        children: [
+          // Header: Logo + User Info
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 16, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const SmartCarLogo(
+                      variant: SmartCarLogoVariant.horizontal,
+                      symbolSize: 28,
+                      wordmarkFontSize: 18,
                     ),
-                    child: const Icon(
-                      Icons.directions_car_filled_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 11),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'SmartCar',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: _ink,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            height: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          'Bonjour, $firstName',
-                          style: GoogleFonts.inter(
-                            color: _muted,
-                            fontSize: 12,
-                            height: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                    color: _ink,
-                    tooltip: 'Fermer',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-                children: [
-                  _SidebarItem(
-                    icon: Icons.space_dashboard_rounded,
-                    label: 'Tableau de bord',
-                    selected: selectedLabel == 'Tableau de bord',
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                  _SidebarItem(
-                    icon: Icons.route_rounded,
-                    label: 'Mes trajets',
-                    selected: selectedLabel == 'Mes trajets',
-                    onTap: () => _closeAndPush(context, const MyTripsPage()),
-                  ),
-                  _SidebarItem(
-                    icon: Icons.verified_user_rounded,
-                    label: 'Vérification universitaire',
-                    selected: selectedLabel == 'Vérification universitaire',
-                    onTap: () => _closeAndPush(
-                      context,
-                      const UniversityVerificationPage(),
-                    ),
-                  ),
-                  if (isDriver) ...[
-                    _SidebarItem(
-                      icon: Icons.add_road_rounded,
-                      label: 'Publier un trajet',
-                      selected: selectedLabel == 'Publier un trajet',
-                      onTap: () => _closeAndPush(
-                        context,
-                        const PublishTripPage(),
+                    const Spacer(),
+                    if (!isPersistent)
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                        color: AppColors.onSurface,
+                        tooltip: 'Close',
                       ),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.directions_car_rounded,
-                      label: 'Mes véhicules',
-                      selected: selectedLabel == 'Mes véhicules',
-                      onTap: () => _closeAndPush(
-                        context,
-                        const VehiclesPage(),
-                      ),
-                    ),
                   ],
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: _ModeSwitchCard(
-                isDriver: isDriver,
-                isLoading: authState.isLoading,
-                onSwitch: () async {
-                  Navigator.of(context).pop();
-                  await _switchMode(context, ref);
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-              child: InkWell(
-                onTap: () async {
-                  await ref.read(authProvider.notifier).signOut();
-                  if (!context.mounted) return;
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _border),
-                    color: Colors.white,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.logout_rounded,
-                        size: 19,
-                        color: _ink,
+                ),
+                const SizedBox(height: 18),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _navigateTo(context, const EditProfilePage()),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.surfaceStroke),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Se déconnecter',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _ink,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 22,
+                            backgroundColor:
+                                AppColors.primary.withValues(alpha: 0.12),
+                            backgroundImage:
+                                (photoUrl != null && photoUrl.isNotEmpty)
+                                    ? NetworkImage(photoUrl)
+                                    : null,
+                            child: (photoUrl == null || photoUrl.isEmpty)
+                                ? Text(
+                                    firstName.isNotEmpty
+                                        ? firstName[0].toUpperCase()
+                                        : 'S',
+                                    style: AppTypography.bodyLg.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        firstName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTypography.bodyLg.copyWith(
+                                          color: AppColors.onSurface,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isVerified) ...[
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.verified_rounded,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                if (email.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    email,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.bodySm.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1, color: AppColors.surfaceStroke),
+          const SizedBox(height: 8),
+
+          // Navigation Items (exact required order)
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              children: [
+                _SidebarItem(
+                  icon: Icons.person_outline_rounded,
+                  label: 'profile',
+                  selected: selectedLabel == 'profile',
+                  onTap: () => _navigateTo(context, const EditProfilePage()),
+                ),
+                _SidebarItem(
+                  icon: Icons.history_rounded,
+                  label: 'History',
+                  selected: selectedLabel == 'History',
+                  onTap: () => _navigateTo(context, const MyTripsPage()),
+                ),
+                _SidebarItem(
+                  icon: Icons.support_agent_rounded,
+                  label: 'Support',
+                  selected: selectedLabel == 'Support',
+                  onTap: () => _showPlaceholder(context, 'Support'),
+                ),
+                _SidebarItem(
+                  icon: Icons.help_outline_rounded,
+                  label: 'FAQ',
+                  selected: selectedLabel == 'FAQ',
+                  onTap: () => _showPlaceholder(context, 'FAQ'),
+                ),
+                _SidebarItem(
+                  icon: Icons.settings_rounded,
+                  label: 'Settings',
+                  selected: selectedLabel == 'Settings',
+                  onTap: () => _showPlaceholder(context, 'Settings'),
+                ),
+                _SidebarItem(
+                  icon: Icons.school_rounded,
+                  label: 'Edu',
+                  selected: selectedLabel == 'Edu',
+                  onTap: () => _navigateTo(
+                    context,
+                    const UniversityVerificationPage(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Dedicated Passenger / Driver Mode Switch
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.surfaceStroke),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          isDriver
+                              ? Icons.directions_car_rounded
+                              : Icons.person_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          isDriver ? 'Driver Mode' : 'Passenger Mode',
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: FilledButton.icon(
+                      onPressed: authState.isLoading
+                          ? null
+                          : () {
+                              if (!isPersistent) {
+                                Navigator.of(context).pop();
+                              }
+                              if (onSwitchMode != null) {
+                                onSwitchMode!();
+                              } else {
+                                ref.read(authProvider.notifier).switchMode(
+                                      isDriver ? 'PASSENGER' : 'DRIVER',
+                                    );
+                              }
+                            },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: Icon(
+                        isDriver
+                            ? Icons.person_rounded
+                            : Icons.directions_car_rounded,
+                        size: 18,
+                      ),
+                      label: Text(
+                        isDriver
+                            ? 'Switch to Passenger Mode'
+                            : 'Switch to Driver Mode',
+                        style: AppTypography.bodySm.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Disconnect button under Passenger / Driver Mode
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: authState.isLoading
+                    ? null
+                    : () => _confirmDisconnect(context, ref),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.logout_rounded, size: 18),
+                label: Text(
+                  'Disconnect',
+                  style: AppTypography.bodySm.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _switchMode(BuildContext context, WidgetRef ref) async {
-    final user = ref.read(authProvider).user;
-    if (user == null) return;
-
-    if (user.activeMode == 'DRIVER') {
-      await ref.read(authProvider.notifier).switchMode('PASSENGER');
-      return;
-    }
-
-    if (!user.isUniversityVerified) {
-      if (!context.mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text('Vérification requise'),
-          content: const Text(
-            'Votre compte doit être approuvé par l’administration avant de passer en mode conducteur.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Plus tard'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const UniversityVerificationPage(),
-                  ),
-                );
-              },
-              child: const Text('Voir la vérification'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    if (user.role == 'DRIVER' && user.driverProfile != null) {
-      await ref.read(authProvider.notifier).switchMode('DRIVER');
-      return;
-    }
-
-    if (!context.mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Text('Activer le mode conducteur'),
-        content: const Text(
-          'Complétez les informations du conducteur et du véhicule pour continuer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-            },
-            child: const Text('Continuer'),
           ),
         ],
       ),
+    );
+
+    if (isPersistent) {
+      return Container(
+        width: 280,
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceContainerLow,
+          border: Border(
+            right: BorderSide(color: AppColors.surfaceStroke),
+          ),
+        ),
+        child: content,
+      );
+    }
+
+    return Drawer(
+      width: 292,
+      backgroundColor: AppColors.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+      ),
+      child: content,
     );
   }
 }
@@ -303,154 +425,47 @@ class _SidebarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 4),
       child: Material(
-        color: selected ? const Color(0x140096FF) : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          child: SizedBox(
-            height: 48,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    icon,
-                    size: 21,
-                    color: selected
-                        ? const Color(0xFF0877C9)
-                        : const Color(0xFF263238),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: selected
-                            ? const Color(0xFF0877C9)
-                            : const Color(0xFF263238),
-                        fontSize: 13,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w600,
-                      ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: selected
+                      ? AppColors.primary
+                      : AppColors.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.onSurface,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
-                  if (selected)
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0096FF),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ModeSwitchCard extends StatelessWidget {
-  const _ModeSwitchCard({
-    required this.isDriver,
-    required this.isLoading,
-    required this.onSwitch,
-  });
-
-  final bool isDriver;
-  final bool isLoading;
-  final VoidCallback onSwitch;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8EDF2)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D0096FF),
-            blurRadius: 14,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0x1A0096FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  isDriver
-                      ? Icons.directions_car_rounded
-                      : Icons.person_rounded,
-                  color: const Color(0xFF0877C9),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isDriver ? 'Mode conducteur' : 'Mode passager',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF263238),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      isDriver ? 'Gérer vos trajets' : 'Trouver un trajet',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF888888),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : onSwitch,
-              style: ElevatedButton.styleFrom(
-                elevation: 0,
-                backgroundColor: const Color(0xFF0096FF),
-                foregroundColor: Colors.white,
-                shape: const StadiumBorder(),
-              ),
-              child: Text(
-                isDriver
-                    ? 'Passer en mode passager'
-                    : 'Passer en mode conducteur',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

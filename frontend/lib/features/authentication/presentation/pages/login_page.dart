@@ -4,6 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/validators/email_validator.dart';
 import '../../../../core/validators/required_validator.dart';
+import '../../../../shared/widgets/smartcar_logo.dart';
 import '../../../../core/widgets/auth_error_dialog.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../providers/auth_provider.dart';
@@ -57,7 +58,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } else {
       final errorMessage =
           ref.read(authProvider).errorMessage ?? 'Login failed. Please try again.';
-      await showAuthErrorDialog(context, errorMessage, title: 'Connexion impossible');
+      await showAuthErrorDialog(context, errorMessage, title: 'Sign In Failed');
     }
   }
 
@@ -81,7 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await showAuthErrorDialog(
         context,
         errorMessage,
-        title: 'Connexion Google impossible',
+        title: 'Google Sign-In Failed',
       );
     }
   }
@@ -385,17 +386,24 @@ class _SmartCarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        'SmartCar',
-        style: AppTypography.headlineSm.copyWith(
-          color: AppColors.onSurface,
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.4,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SmartCarLogo(
+          variant: SmartCarLogoVariant.iconOnly,
+          symbolSize: 28,
         ),
-      ),
+        const SizedBox(width: 8),
+        Text(
+          'SmartCar',
+          style: AppTypography.headlineSm.copyWith(
+            color: AppColors.onSurface,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+          ),
+        ),
+      ],
     );
   }
 }

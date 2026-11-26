@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" fill="none">
+  <g transform="translate(8, 8) scale(0.625)">
+    <path d="M64 12C40.804 12 22 30.804 22 54C22 79.5 52.5 106.2 61.2 113.6C62.8 115 65.2 115 66.8 113.6C75.5 106.2 106 79.5 106 54C106 30.804 87.196 12 64 12Z" fill="#3A3FE5"/>
+    <path d="M40 58L45.5 43.5C46.7 40.2 49.8 38 53.3 38H74.7C78.2 38 81.3 40.2 82.5 43.5L88 58V67C88 68.7 86.7 70 85 70H81C79.3 70 78 68.7 78 67V65H50V67C50 68.7 48.7 70 47 70H43C41.3 70 40 68.7 40 67V58Z" fill="#FFFFFF"/>
+    <path d="M48 52L51.2 43.5H76.8L80 52H48Z" fill="#5352B7"/>
+    <path d="M44 79C53 84 75 84 84 79" stroke="#C2C1FF" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <text x="104" y="60" font-family="'Bricolage Grotesque', sans-serif" font-size="34" font-weight="800" letter-spacing="-0.8" fill="#1B1B20">Smart<tspan fill="#3A3FE5">Car</tspan></text>
+</svg>

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../shared/widgets/smartcar_logo.dart';
 import '../../../../core/validators/email_validator.dart';
 import '../../../../core/validators/required_validator.dart';
 import '../../../../core/widgets/auth_error_dialog.dart';
@@ -83,8 +84,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (bytes.lengthInBytes > 5 * 1024 * 1024) {
         await showAuthErrorDialog(
           context,
-          'Votre carte étudiant doit faire moins de 5 MB.',
-          title: 'Image trop volumineuse',
+          'Your student ID card must be smaller than 5 MB.',
+          title: 'Image Too Large',
         );
         return;
       }
@@ -100,16 +101,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (_studentCard == null) {
       await showAuthErrorDialog(
         context,
-        'Ajoutez une photo de votre carte étudiant pour envoyer la demande de vérification.',
-        title: 'Carte étudiant requise',
+        'Please add a photo of your student ID card to submit the verification request.',
+        title: 'Student Card Required',
       );
       return;
     }
     if (!_acceptedTerms) {
       await showAuthErrorDialog(
         context,
-        'Vous devez accepter les règles de covoiturage avant de créer votre compte.',
-        title: 'Conditions requises',
+        'You must accept the carpooling rules before creating your account.',
+        title: 'Terms Required',
       );
       return;
     }
@@ -138,7 +139,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       await showAuthErrorDialog(
         context,
         message,
-        title: 'Création du compte impossible',
+        title: 'Account Creation Failed',
       );
     }
   }
@@ -147,8 +148,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (_studentCard == null) {
       await showAuthErrorDialog(
         context,
-        'Ajoutez une photo de votre carte étudiant avant de continuer.',
-        title: 'Carte étudiant requise',
+        'Please add a photo of your student ID card before continuing.',
+        title: 'Student Card Required',
       );
       return;
     }
@@ -167,7 +168,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       await showAuthErrorDialog(
         context,
         message,
-        title: 'Connexion Google impossible',
+        title: 'Google Sign-In Failed',
       );
     }
   }
@@ -276,67 +277,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'SmartCar',
-                                  style: AppTypography.headlineSm.copyWith(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: AppColors.brandIndigo,
-                                    backgroundColor: Colors.white,
-                                    minimumSize: const Size(86, 38),
-                                    shape: const StadiumBorder(
-                                      side: BorderSide(
-                                        color: AppColors.outlineVariant,
-                                      ),
-                                    ),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('Log In',
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700)),
-                                      SizedBox(width: 5),
-                                      Icon(Icons.arrow_forward_rounded,
-                                          size: 15),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                            const SmartCarLogo(
+                              variant: SmartCarLogoVariant.horizontal,
+                              symbolSize: 28,
+                              wordmarkFontSize: 18,
                             ),
-                            const SizedBox(height: 14),
-                            Container(
-                              height: 18,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: AppColors.secondaryFixed,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.verified_rounded,
-                                      size: 11, color: AppColors.brandIndigo),
-                                  SizedBox(width: 5),
-                                  Text('Verified Student Network',
-                                      style: TextStyle(
-                                          color: AppColors.brandIndigo,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700)),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 18),
                             Text.rich(
                               const TextSpan(
                                 children: [
@@ -370,6 +316,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               decoration: _fieldBox,
                               child: TextFormField(
                                 controller: _nameController,
+                                style: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontSize: 14,
+                                ),
                                 validator: (value) =>
                                     value == null || value.trim().isEmpty
                                         ? 'Please enter your full name'
@@ -490,6 +440,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               decoration: _fieldBox,
                               child: TextFormField(
                                 controller: _emailController,
+                                style: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontSize: 14,
+                                ),
                                 validator: EmailValidator.validate,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: _inputDecoration(
@@ -507,6 +461,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               decoration: _fieldBox,
                               child: TextFormField(
                                 controller: _passwordController,
+                                style: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontSize: 14,
+                                ),
                                 validator: RequiredValidator.validatePassword,
                                 obscureText: _obscurePassword,
                                 onChanged: (_) => setState(() {}),
