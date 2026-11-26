@@ -1,40 +1,55 @@
-const { randomUUID } = require('node:crypto');
+const sequelize = require('../../config/database');
+const Trip = require('../../models/trip');
+const { findOwnerId, requireOwnerId } = require('../driver-owner');
 
-function createTripsRepository(initialTrips = []) {
-  const trips = new Map(initialTrips.map((trip) => [trip.id, trip]));
-
-  function list(ownerId) {
-    return [...trips.values()].filter((trip) => trip.ownerId === ownerId);
-  }
-
-  function find(ownerId, id) {
-    const trip = trips.get(id);
-    return trip?.ownerId === ownerId ? trip : undefined;
-  }
-
-  function create(ownerId, details) {
-    const trip = { id: randomUUID(), ownerId, status: 'published', details };
-    trips.set(trip.id, trip);
-    return trip;
-  }
-
-  function update(ownerId, id, details) {
-    const trip = find(ownerId, id);
-    if (!trip) return undefined;
-    const updated = { ...trip, details };
-    trips.set(id, updated);
-    return updated;
-  }
-
-  function setStatus(ownerId, id, status) {
-    const trip = find(ownerId, id);
-    if (!trip) return undefined;
-    const updated = { ...trip, status };
-    trips.set(id, updated);
-    return updated;
-  }
-
-  return { list, find, create, update, setStatus };
+function serialize(trip) {
+  const { id, status, origin, destination, departureAt, vehicleId, seats, contributionDh } = trip;
+  return {
+    id,
+    status,
+    details: { origin, destination, departureAt: departureAt.toISOString(), vehicleId, seats, contributionDh },
+  };
 }
 
-module.exports = { createTripsRepository, tripsRepository: createTripsRepository() };
+async function findRow(firebaseUid, id, transaction) {
+  const driverId = await findOwnerId(firebaseUid, transaction);
+  if (!driverId) return null;
+  return Trip.findOne({
+    where: { id, driverId },
+    transaction,
+    lock: transaction?.LOCK.UPDATE,
+  });
+}
+
+async function list(firebaseUid) {
+  const driverId = await findOwnerId(firebaseUid);
+  if (!driverId) return [];
+  const trips = await Trip.findAll({ where: { driverId } });
+  return trips.map(serialize);
+}
+
+async function find(firebaseUid, id, transaction) {
+  const trip = await findRow(firebaseUid, id, transaction);
+  return trip ? serialize(trip) : undefined;
+}
+
+async function create(firebaseUid, details, transaction) {
+  const driverId = await requireOwnerId(firebaseUid, transaction);
+  return serialize(await Trip.create({ ...details, driverId }, { transaction }));
+}
+
+async function update(firebaseUid, id, details, transaction) {
+  const trip = await findRow(firebaseUid, id, transaction);
+  return trip ? serialize(await trip.update(details, { transaction })) : undefined;
+}
+
+async function setStatus(firebaseUid, id, status, transaction) {
+  const trip = await findRow(firebaseUid, id, transaction);
+  return trip ? serialize(await trip.update({ status }, { transaction })) : undefined;
+}
+
+function transaction(operation) {
+  return sequelize.transaction(operation);
+}
+
+module.exports = { tripsRepository: { list, find, create, update, setStatus, transaction } };

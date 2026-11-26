@@ -7,6 +7,9 @@ jest.mock('../src/config/firebase', () => ({
   }),
 }));
 
+jest.mock('../src/repositories/vehicles/vehicles.repository', () =>
+  require('./support/memory-vehicles'));
+
 const app = require('../src/app');
 
 const vehicleInput = {

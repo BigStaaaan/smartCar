@@ -3,8 +3,8 @@ const Joi = require('joi');
 const departurePattern = /^(\d{4}-\d{2}-\d{2})T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 const fields = Joi.object({
-  origin: Joi.string().trim(),
-  destination: Joi.string().trim(),
+  origin: Joi.string().trim().max(65535, 'utf8'),
+  destination: Joi.string().trim().max(65535, 'utf8'),
   departureAt: Joi.string().trim().custom((value, helpers) => {
     const date = departurePattern.exec(value)?.[1];
     const departure = new Date(value);
@@ -15,7 +15,7 @@ const fields = Joi.object({
     return departure.toISOString();
   }),
   vehicleId: Joi.string().trim(),
-  seats: Joi.number().integer().min(1),
+  seats: Joi.number().integer().min(1).max(4294967295),
   contributionDh: Joi.number().integer().min(0).max(40).allow(null),
 }).required().unknown(false);
 

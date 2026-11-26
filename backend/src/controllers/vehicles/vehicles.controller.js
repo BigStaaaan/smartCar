@@ -1,12 +1,12 @@
 const repository = require('../../repositories/vehicles/vehicles.repository');
 
 function vehicleResponse(vehicle, includeRegistration = false) {
-  const { ownerId, photo, registrationPhoto, ...details } = vehicle;
+  const { ownerId, photo, registrationPhoto, hasRegistrationPhoto, ...details } = vehicle;
   const response = {
     ...details,
     year: details.year ?? null,
     photo: photo?.toString('base64') ?? null,
-    hasRegistrationPhoto: Boolean(registrationPhoto),
+    hasRegistrationPhoto: hasRegistrationPhoto ?? Boolean(registrationPhoto),
   };
   if (includeRegistration) {
     response.registrationPhoto = registrationPhoto?.toString('base64') ?? null;

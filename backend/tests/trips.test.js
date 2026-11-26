@@ -9,8 +9,11 @@ jest.mock('../src/config/firebase', () => ({
   }),
 }));
 
+jest.mock('../src/repositories/vehicles/vehicles.repository', () =>
+  require('./support/memory-vehicles'));
+
 jest.mock('../src/repositories/trips/trips.repository', () => {
-  const { createTripsRepository } = jest.requireActual('../src/repositories/trips/trips.repository');
+  const { createTripsRepository } = require('./support/memory-trips');
   return {
     tripsRepository: createTripsRepository([
       {
