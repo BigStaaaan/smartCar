@@ -4,9 +4,9 @@ const maxImageBytes = 2 * 1024 * 1024;
 const platePattern = /^(\d{1,5})\s*(?:\|\s*)?([A-Za-z]|(?=\p{L})[\u0600-\u06ff])\s*(?:\|\s*)?(\d{1,2})$/u;
 
 const fields = Joi.object({
-  make: Joi.string().trim(),
-  model: Joi.string().trim(),
-  color: Joi.string().trim(),
+  make: Joi.string().trim().max(255),
+  model: Joi.string().trim().max(255),
+  color: Joi.string().trim().max(255),
   year: Joi.number().integer().min(1900).max(new Date().getFullYear() + 1).allow(null),
   registrationNumber: Joi.string().trim().custom((value, helpers) => {
     const match = value.match(platePattern);
@@ -16,7 +16,7 @@ const fields = Joi.object({
     const [, serial, letter, province] = match;
     return `${serial} | ${letter.toUpperCase()} | ${province}`;
   }),
-  passengerCapacity: Joi.number().integer().min(1),
+  passengerCapacity: Joi.number().integer().min(1).max(4294967295),
   photo: Joi.binary().strict().min(1).max(maxImageBytes),
   registrationPhoto: Joi.binary().strict().min(1).max(maxImageBytes),
 }).unknown(false);
