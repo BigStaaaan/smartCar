@@ -2,15 +2,15 @@
 
 Le Backend Express utilise Sequelize 6 et le pilote `mysql2` pour accéder à MySQL ou MariaDB. Le développement local a été vérifié sur MariaDB via XAMPP. Firebase Authentication vérifie l’identité du compte. Les données Driver sont stockées dans `vehicles` et `trips`. La table `users` relève du module Auth.
 
-Pour configurer la connexion et appliquer les migrations locales dans l’ordre, voir le [guide XAMPP Driver](DRIVER_MYSQL.md).
+Pour configurer la connexion et appliquer les migrations locales dans l’ordre, voir le [guide XAMPP Driver](../sql/DRIVER_MYSQL.md).
 
 ## Installation du schéma Driver
 
-Deux méthodes alternatives créent le même schéma sur une base où `users` a déjà été initialisée par DEV 1 : importer [driver_schema.sql](sql/driver_schema.sql) dans phpMyAdmin ou exécuter les migrations Sequelize Driver dans l’ordre `vehicles` puis `trips`. Choisir une seule méthode par base. Le script SQL reprend les deux définitions de table des migrations et laisse `users` intacte. Le Backend utilise les mêmes modèles Sequelize avec les deux méthodes.
+Deux méthodes alternatives créent le même schéma sur une base où `users` a déjà été initialisée par DEV 1 : importer [driver_schema.sql](../sql/driver_schema.sql) dans phpMyAdmin ou exécuter les migrations Sequelize Driver dans l’ordre `vehicles` puis `trips`. Choisir une seule méthode par base. Le script SQL reprend les deux définitions de table des migrations et laisse `users` intacte. Le Backend utilise les mêmes modèles Sequelize avec les deux méthodes.
 
 ## Table `vehicles`
 
-Migration [création de vehicles](migrations/20261124000100-create-vehicles.js) et [modèle Sequelize Vehicle](src/models/vehicle.js).
+Migration [création de vehicles](20261124000100-create-vehicles.js) et [modèle Sequelize Vehicle](../src/models/vehicle.js).
 
 | Colonne | Type SQL | NULL | Valeur par défaut et contraintes |
 | --- | --- | --- | --- |
@@ -38,7 +38,7 @@ Index déclarés :
 
 ## Table `trips`
 
-Migration [création de trips](migrations/20261124000200-create-trips.js) et [modèle Sequelize Trip](src/models/trip.js).
+Migration [création de trips](20261124000200-create-trips.js) et [modèle Sequelize Trip](../src/models/trip.js).
 
 | Colonne | Type SQL | NULL | Valeur par défaut et contraintes |
 | --- | --- | --- | --- |
@@ -90,7 +90,7 @@ Dans Sequelize, `Vehicle` expose la relation `owner` vers `User`. `Trip` expose 
 
 ## Identité, statuts et règles métier
 
-- Le middleware Firebase vérifie le jeton Bearer et place son UID dans `req.user.uid`. Le [repository d’identité Driver](src/repositories/driver-owner.js) recherche `users.firebase_uid`, vérifie l’égalité exacte de l’UID et récupère `users.id`. Les repositories filtrent ensuite `vehicles.owner_id` ou `trips.driver_id`. Le client ne choisit pas le propriétaire ni le conducteur.
+- Le middleware Firebase vérifie le jeton Bearer et place son UID dans `req.user.uid`. Le [repository d’identité Driver](../src/repositories/driver-owner.js) recherche `users.firebase_uid`, vérifie l’égalité exacte de l’UID et récupère `users.id`. Les repositories filtrent ensuite `vehicles.owner_id` ou `trips.driver_id`. Le client ne choisit pas le propriétaire ni le conducteur.
 - Le statut véhicule est initialisé à `PENDING`. Le schéma prévoit aussi `APPROVED` et `REJECTED`. L’API Driver ne permet pas de modifier ce champ et le service Trajets ne conditionne pas la publication à l’approbation.
 - Pour publier ou modifier, les lieux doivent être distincts, le départ futur et le véhicule appartenir au conducteur. Les places sont contrôlées par rapport à sa capacité. Joi exige une contribution entière de 0 à 40 DH ou une valeur absente. Le service convertit 0 en `NULL`.
 - Un trajet `published` peut être modifié ou annulé avant l’heure de départ. Il peut être démarré à partir de cette heure, ce qui le fait passer à `in_progress`. Seul un trajet `in_progress` peut passer à `completed`. L’annulation conserve la ligne et utilise `cancelled`. Les changements d’état utilisent des transactions et des verrous sur la ligne du trajet.
@@ -98,7 +98,7 @@ Dans Sequelize, `Vehicle` expose la relation `owner` vers `User`. `Trip` expose 
 
 ## Photos et cartes grises
 
-Le [repository Véhicules](src/repositories/vehicles/vehicles.repository.js) écrit les images sous `backend/uploads/driver-vehicles/` avec des noms aléatoires. La base conserve les clés `photo_key` et `registration_photo_key`. Il n’existe aucune table `vehicle_documents`. Les routes acceptent JPEG, PNG et WebP jusqu’à 2 Mio par image.
+Le [repository Véhicules](../src/repositories/vehicles/vehicles.repository.js) écrit les images sous `backend/uploads/driver-vehicles/` avec des noms aléatoires. La base conserve les clés `photo_key` et `registration_photo_key`. Il n’existe aucune table `vehicle_documents`. Les routes acceptent JPEG, PNG et WebP jusqu’à 2 Mio par image.
 
 Les réponses restent réservées au propriétaire et utilisent `Cache-Control: no-store`. Le détail peut contenir `registrationPhoto` en Base64. La liste renvoie seulement `hasRegistrationPhoto` pour la carte grise. Les clés de stockage ne font pas partie de la réponse API.
 

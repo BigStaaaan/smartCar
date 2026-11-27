@@ -30,7 +30,7 @@ Choisir **une seule méthode** pour la même base : importer le script SQL ou ap
 
 1. Sélectionner la base cible déjà initialisée par DEV 1. Vérifier que `users.id` est une clé primaire `CHAR(36)` en `utf8mb4_bin` et que `users` utilise InnoDB.
 2. Vérifier que `vehicles` et `trips` sont absentes. Si une table existe déjà, comparer sa définition à la migration avant de poursuivre.
-3. Ouvrir **Importer**, choisir [driver_schema.sql](sql/driver_schema.sql), garder le format **SQL** et l’encodage **UTF-8**, puis lancer l’import. Le script crée `vehicles`, puis `trips`, dans la base sélectionnée.
+3. Ouvrir **Importer**, choisir [driver_schema.sql](driver_schema.sql), garder le format **SQL** et l’encodage **UTF-8**, puis lancer l’import. Le script crée `vehicles`, puis `trips`, dans la base sélectionnée.
 4. Vérifier que les deux tables apparaissent. En cas d’erreur, vérifier quelle table a été créée avant de relancer. MariaDB peut conserver la première création si la seconde échoue.
 
 L’import ne renseigne pas `SequelizeMeta`.
