@@ -1,4 +1,4 @@
-package com.example.smartcar
+package com.smartcar.smartcar_app
 
 import io.flutter.embedding.android.FlutterActivity
 
