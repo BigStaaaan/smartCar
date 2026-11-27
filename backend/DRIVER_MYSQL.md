@@ -22,7 +22,20 @@ Pour une base neuve, utiliser **l'une** des méthodes de DEV 1. La commande suiv
 if ($LASTEXITCODE -ne 0) { throw 'Initialisation du schéma commun échouée' }
 ```
 
-## 3. Appliquer les migrations Driver manquantes
+## 3. Installer les tables Driver
+
+Choisir **une seule méthode** pour la même base : importer le script SQL ou appliquer les migrations Sequelize Driver. Les deux définissent les mêmes tables.
+
+### Option A — Importer dans phpMyAdmin
+
+1. Sélectionner la base cible déjà initialisée par DEV 1. Vérifier que `users.id` est une clé primaire `CHAR(36)` en `utf8mb4_bin` et que `users` utilise InnoDB.
+2. Vérifier que `vehicles` et `trips` sont absentes. Si une table existe déjà, comparer sa définition à la migration avant de poursuivre.
+3. Ouvrir **Importer**, choisir [driver_schema.sql](sql/driver_schema.sql), garder le format **SQL** et l’encodage **UTF-8**, puis lancer l’import. Le script crée `vehicles`, puis `trips`, dans la base sélectionnée.
+4. Vérifier que les deux tables apparaissent. En cas d’erreur, vérifier quelle table a été créée avant de relancer. MariaDB peut conserver la première création si la seconde échoue.
+
+L’import ne renseigne pas `SequelizeMeta`.
+
+### Option B — Appliquer les migrations Sequelize Driver manquantes
 
 Toujours depuis `backend/`, exécuter ce bloc. Il vérifie la clé `users.id`, applique `vehicles` puis `trips` et ignore les tables Driver déjà créées par ces mêmes migrations. Si votre base possède des tables Driver provenant d'un autre schéma, comparer d'abord leur définition avec les migrations. En cas d'erreur, arrêter la procédure et conserver les tables existantes.
 
