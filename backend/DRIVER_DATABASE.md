@@ -4,6 +4,10 @@ Le Backend Express utilise Sequelize 6 et le pilote `mysql2` pour accéder à My
 
 Pour configurer la connexion et appliquer les migrations locales dans l’ordre, voir le [guide XAMPP Driver](DRIVER_MYSQL.md).
 
+## Installation du schéma Driver
+
+Deux méthodes alternatives créent le même schéma sur une base où `users` a déjà été initialisée par DEV 1 : importer [driver_schema.sql](sql/driver_schema.sql) dans phpMyAdmin ou exécuter les migrations Sequelize Driver dans l’ordre `vehicles` puis `trips`. Choisir une seule méthode par base. Le script SQL reprend les deux définitions de table des migrations et laisse `users` intacte. Le Backend utilise les mêmes modèles Sequelize avec les deux méthodes.
+
 ## Table `vehicles`
 
 Migration [création de vehicles](migrations/20261124000100-create-vehicles.js) et [modèle Sequelize Vehicle](src/models/vehicle.js).
