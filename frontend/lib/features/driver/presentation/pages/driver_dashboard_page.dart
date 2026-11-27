@@ -70,10 +70,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
     vsync: this,
     duration: const Duration(seconds: 5),
   );
-  late final _ambient = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 14),
-  );
 
   bool? _reduceMotion;
 
@@ -95,11 +91,9 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
     if (reduceMotion) {
       _entrance.value = 1;
       _route.stop();
-      _ambient.stop();
     } else {
       _entrance.forward();
       _route.repeat();
-      _ambient.repeat(reverse: true);
     }
   }
 
@@ -109,7 +103,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
     _clock.dispose();
     _entrance.dispose();
     _route.dispose();
-    _ambient.dispose();
     super.dispose();
   }
 
@@ -144,28 +137,10 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: _ambient,
-                    builder: (_, child) => Transform.translate(
-                      offset: Offset(-30 * _ambient.value, 40 * _ambient.value),
-                      child: child,
-                    ),
-                    child: const Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Positioned(
-                            top: -70,
-                            right: -60,
-                            child: _Halo(color: driverHighlight, size: 240)),
-                        Positioned(
-                            bottom: 60,
-                            left: -80,
-                            child: _Halo(color: driverOutline, size: 220)),
-                      ],
-                    ),
-                  ),
-                ),
+                const Positioned.fill(
+                    child: DecoratedBox(
+                        decoration:
+                            BoxDecoration(gradient: driverCanvasGradient))),
                 SafeArea(
                   child: Builder(builder: (context) {
                     final text = Theme.of(context).textTheme;
@@ -188,7 +163,8 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                     return Stack(
                       children: [
                         SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(18, 22, 18, 110),
+                          padding: const EdgeInsets.fromLTRB(
+                              driverPageMargin, 24, driverPageMargin, 110),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -215,7 +191,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                           foreground: driverOnAccent),
                                     ],
                                   )),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 24),
                               if (overview == null || featured != null) ...[
                                 _reveal(
                                     2,
@@ -227,7 +203,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                           return Text(
                                               tripStatusLabel(featured, now),
                                               style: display.copyWith(
-                                                  fontSize: 46));
+                                                  fontSize: 40));
                                         }
                                         final remaining =
                                             (details?.departureAt ??
@@ -256,7 +232,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                               child: Text(
                                                 '${duration.inHours}:$minutes:$seconds',
                                                 style: display.copyWith(
-                                                    fontSize: 84),
+                                                    fontSize: 64),
                                               ),
                                             ),
                                           ],
@@ -371,7 +347,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                 const DriverCard(
                                     child: Text(
                                         'Aucun trajet prêt, à venir ou en cours')),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: driverSectionGap),
                               _reveal(
                                   4,
                                   Row(
@@ -396,7 +372,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
                                         ),
                                     ],
                                   )),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 24),
                               _reveal(
                                   5,
                                   Text('Données de démonstration',
@@ -426,27 +402,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage>
       ),
     );
   }
-}
-
-class _Halo extends StatelessWidget {
-  const _Halo({required this.color, required this.size});
-
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) => SizedBox.square(
-        dimension: size,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [
-              color.withValues(alpha: .62),
-              color.withValues(alpha: 0)
-            ]),
-          ),
-        ),
-      );
 }
 
 class _Metric extends StatelessWidget {
@@ -492,7 +447,7 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           border: Border.all(color: driverHighlight),
           borderRadius: BorderRadius.circular(999),
@@ -540,11 +495,11 @@ class _BottomBar extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
               child: Container(
                 height: 62,
                 decoration: BoxDecoration(
-                  color: driverSurface.withValues(alpha: .88),
+                  color: driverFrostedSurface.withValues(alpha: .85),
                   border:
                       Border.all(color: driverOutline.withValues(alpha: .80)),
                   borderRadius: BorderRadius.circular(999),
@@ -623,10 +578,15 @@ class _BarItem extends StatelessWidget {
                         ? driverText
                         : driverText.withValues(alpha: .55)),
                 const SizedBox(height: 2),
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelSmall),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(label,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.labelSmall),
+                  ),
+                ),
                 const SizedBox(height: 3),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 450),

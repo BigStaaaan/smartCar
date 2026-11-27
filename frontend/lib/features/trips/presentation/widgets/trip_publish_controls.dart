@@ -20,14 +20,12 @@ class TripPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
-          border: Border.all(color: driverHighlight),
+          border: Border.all(color: driverOutline),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          child: Text(text,
-              style:
-                  const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Text(text, style: Theme.of(context).textTheme.labelMedium),
         ),
       );
 }
@@ -51,7 +49,7 @@ class TripCircleButton extends StatelessWidget {
               fixedSize: const Size.square(38),
               minimumSize: Size.zero,
               padding: EdgeInsets.zero,
-              side: const BorderSide(color: driverHighlight, width: 1.5),
+              side: const BorderSide(color: driverOutline),
               shape: const CircleBorder(),
             ),
             child: child,
@@ -72,7 +70,7 @@ class TripDaySegment extends StatelessWidget {
         height: 34,
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          border: Border.all(color: driverHighlight),
+          border: Border.all(color: driverOutline),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Stack(

@@ -29,7 +29,9 @@ class VehiclesPage extends ConsumerWidget {
                   symbolSize: 28,
                 ),
                 SizedBox(width: 8),
-                Text('Mode Driver'),
+                Flexible(
+                    child: Text('Mode Driver',
+                        maxLines: 1, overflow: TextOverflow.ellipsis)),
               ],
             ),
           ),
@@ -41,7 +43,8 @@ class VehiclesPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                      padding: const EdgeInsets.fromLTRB(driverPageMargin, 16,
+                          driverPageMargin, driverSectionGap),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -110,7 +113,8 @@ class VehiclesPage extends ConsumerWidget {
                     ),
                     if (vehicles.hasValue)
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
+                        padding: const EdgeInsets.fromLTRB(driverPageMargin, 16,
+                            driverPageMargin, driverSectionGap),
                         child: FilledButton.icon(
                           onPressed: () => _openForm(context),
                           icon: const Icon(Icons.add_rounded),
@@ -280,7 +284,9 @@ class _VehicleDetailsPageState extends ConsumerState<_VehicleDetailsPage> {
                 symbolSize: 28,
               ),
               SizedBox(width: 8),
-              Text('Détail du véhicule'),
+              Flexible(
+                  child: Text('Détail du véhicule',
+                      maxLines: 1, overflow: TextOverflow.ellipsis)),
             ],
           ),
         ),
@@ -289,7 +295,8 @@ class _VehicleDetailsPageState extends ConsumerState<_VehicleDetailsPage> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                padding: const EdgeInsets.fromLTRB(
+                    driverPageMargin, 16, driverPageMargin, 24),
                 children: [
                   if (details.photo case final photo?) ...[
                     SizedBox(
