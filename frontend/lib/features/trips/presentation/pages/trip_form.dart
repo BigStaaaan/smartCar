@@ -301,15 +301,7 @@ class _TripFormState extends ConsumerState<TripForm>
                 ?.copyWith(fontWeight: FontWeight.w800),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: driverText.withValues(alpha: .64)),
-              filled: false,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 5),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              errorBorder: InputBorder.none,
-              focusedErrorBorder: InputBorder.none,
+              constraints: const BoxConstraints(minHeight: 52),
             ),
             validator: (value) {
               final location = value?.trim() ?? '';
@@ -465,7 +457,7 @@ class _TripFormState extends ConsumerState<TripForm>
               message: 'Choisir l’heure',
               child: InkWell(
                 onTap: _saving ? null : _pickTime,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(24),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: AnimatedSwitcher(
@@ -486,7 +478,7 @@ class _TripFormState extends ConsumerState<TripForm>
                       style: Theme.of(context)
                           .textTheme
                           .displaySmall
-                          ?.copyWith(fontSize: 76, height: 1),
+                          ?.copyWith(fontSize: 56, height: 1),
                     ),
                   ),
                 ),
@@ -629,7 +621,8 @@ class _TripFormState extends ConsumerState<TripForm>
                 Form(
                   key: _form,
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 22, 18, 32),
+                    padding: const EdgeInsets.fromLTRB(
+                        driverPageMargin, 24, driverPageMargin, 32),
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -703,7 +696,8 @@ class _TripFormState extends ConsumerState<TripForm>
                                 child: FilledButton(
                                   onPressed: _saving ? null : _saveTrip,
                                   style: FilledButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(50),
+                                    minimumSize: const Size.fromHeight(
+                                        driverActionHeight),
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 14, horizontal: 16),
                                   ),
