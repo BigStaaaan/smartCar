@@ -174,7 +174,7 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: _fieldLabel),
+          Text(label, style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: 5),
           TextFormField(
             controller: controller,
@@ -189,9 +189,6 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                 : null,
             decoration: InputDecoration(
               hintText: hint,
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
             ),
             validator: (value) {
               final text = value?.trim() ?? '';
@@ -209,9 +206,6 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
           ),
         ],
       );
-
-  static const _fieldLabel =
-      TextStyle(fontSize: 12, fontWeight: FontWeight.w700);
 
   Widget _plate() => FormField<String>(
         validator: (_) =>
@@ -463,7 +457,7 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                       _PressScale(
                         child: FilledButton(
                           style: FilledButton.styleFrom(
-                            minimumSize: const Size(0, 40),
+                            minimumSize: const Size(0, 52),
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             textStyle: Theme.of(context)
                                 .textTheme
@@ -650,7 +644,10 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                                   key: _form,
                                   child: SingleChildScrollView(
                                     padding: const EdgeInsets.fromLTRB(
-                                        18, 16, 18, 8),
+                                        driverPageMargin,
+                                        16,
+                                        driverPageMargin,
+                                        8),
                                     child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.stretch,
@@ -714,8 +711,11 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                               ),
                               Container(
                                 width: double.infinity,
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                                padding: const EdgeInsets.fromLTRB(
+                                    driverPageMargin,
+                                    16,
+                                    driverPageMargin,
+                                    driverSectionGap),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                       begin: Alignment.topCenter,
@@ -732,7 +732,8 @@ class _VehicleFormPageState extends ConsumerState<VehicleFormPage>
                                 child: _PressScale(
                                   child: FilledButton(
                                     style: FilledButton.styleFrom(
-                                        minimumSize: const Size(0, 54)),
+                                        minimumSize:
+                                            const Size(0, driverActionHeight)),
                                     onPressed: _busy ? null : _submit,
                                     child: _saving
                                         ? const SizedBox.square(
@@ -817,13 +818,12 @@ class _MediaButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = FilledButton.styleFrom(
-      minimumSize: const Size(0, 72),
+      minimumSize: const Size(0, driverActionHeight),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const StadiumBorder(),
       backgroundColor: filled ? driverAccent : Colors.transparent,
-      foregroundColor: filled ? driverSurface : driverText,
-      side:
-          filled ? null : const BorderSide(color: driverHighlight, width: 1.5),
+      foregroundColor: filled ? driverOnAccent : driverText,
+      side: filled ? null : const BorderSide(color: driverOutline),
     );
     return _PressScale(
       child: FilledButton(
@@ -859,7 +859,7 @@ class _RoundButton extends StatelessWidget {
           style: IconButton.styleFrom(
               backgroundColor: driverSurface,
               foregroundColor: color,
-              side: const BorderSide(color: driverHighlight, width: 1.5)),
+              side: const BorderSide(color: driverOutline)),
           icon: Icon(icon),
         ),
       );

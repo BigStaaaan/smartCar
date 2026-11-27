@@ -195,7 +195,8 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 480),
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(18, 22, 18, 32),
+                        padding: const EdgeInsets.fromLTRB(
+                            driverPageMargin, 24, driverPageMargin, 32),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -211,7 +212,7 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                                   ),
                                   TripPill(tripStatusLabel(trip, now)),
                                 ]),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: driverSectionGap),
                             Text.rich(
                               TextSpan(children: [
                                 TextSpan(text: details.origin),
@@ -233,7 +234,7 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                             ),
                             const SizedBox(height: 5),
                             TripNote(tripDateLabel(details.departureAt)),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: driverSectionGap),
                             DriverCard(
                               child: Column(
                                   crossAxisAlignment:
@@ -266,7 +267,7 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                                       TripNote('Destination · $coordinates'),
                                   ]),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: driverSectionGap),
                             DriverCard(
                               child: Row(children: [
                                 const SizedBox(
@@ -292,7 +293,7 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                                 ),
                               ]),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: driverSectionGap),
                             DriverCard(
                               child: Column(
                                   crossAxisAlignment:
@@ -323,7 +324,7 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                                   ]),
                             ),
                             if (trip.isUpcoming(now)) ...[
-                              const SizedBox(height: 14),
+                              const SizedBox(height: driverSectionGap),
                               Row(children: [
                                 Expanded(
                                     child: OutlinedButton(
@@ -354,7 +355,7 @@ class _TripDetailsPageState extends ConsumerState<TripDetailsPage> {
                               ]),
                             ],
                             if (trip.canStart(now)) ...[
-                              const SizedBox(height: 14),
+                              const SizedBox(height: driverSectionGap),
                               FilledButton(
                                 onPressed: _changingStatus
                                     ? null
@@ -388,44 +389,28 @@ class _TripRoutePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final grid = Paint()
-      ..color = driverText.withValues(alpha: .07)
-      ..strokeWidth = 1;
-    for (final fraction in [.2, .5, .8]) {
-      final x = size.width * fraction;
-      final y = size.height * fraction;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
-    final start = Offset(11, size.height * .8);
-    final end = Offset(size.width - 11, size.height * .18);
-    final route = Path()
-      ..moveTo(start.dx, start.dy)
-      ..cubicTo(size.width * .30, size.height, size.width * .28,
-          size.height * .17, size.width * .54, size.height * .48)
-      ..cubicTo(size.width * .76, size.height * .70, size.width * .86,
-          size.height * .72, end.dx, end.dy);
+    final centerX = size.width / 2;
+    final start = Offset(centerX, 12);
+    final end = Offset(centerX, size.height - 12);
     final pen = Paint()
-      ..color = driverText.withValues(alpha: .10)
-      ..style = PaintingStyle.stroke
+      ..color = driverAccent
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 9;
-    canvas.drawPath(route, pen);
-    final path = route.computeMetrics().first;
-    canvas.drawPath(
-      path.extractPath(0, path.length * progress),
-      pen
-        ..color = driverHighlight
-        ..strokeWidth = 6,
-    );
-    canvas.drawCircle(start, 6, Paint()..color = driverSurface);
-    canvas.drawCircle(
-        start,
-        6,
-        pen
-          ..color = driverAccent
-          ..strokeWidth = 3);
-    canvas.drawCircle(end, 8, Paint()..color = driverAccent);
+      ..strokeWidth = 2;
+    final visibleEnd = start.dy + (end.dy - start.dy) * progress;
+    for (double y = start.dy + 9; y < visibleEnd - 6; y += 8) {
+      final dashEnd = (y + 4).clamp(y, visibleEnd - 6).toDouble();
+      canvas.drawLine(Offset(centerX, y), Offset(centerX, dashEnd), pen);
+    }
+    canvas.drawCircle(start, 5, Paint()..color = driverAccent);
+    if (progress >= 1) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: end, width: 14, height: 9),
+          const Radius.circular(4.5),
+        ),
+        Paint()..color = driverAccent,
+      );
+    }
   }
 
   @override

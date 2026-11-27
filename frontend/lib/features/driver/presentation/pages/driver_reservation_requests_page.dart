@@ -162,7 +162,8 @@ class _RequestsScreenState extends State<_RequestsScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 22, 18, 32),
+              padding: const EdgeInsets.fromLTRB(
+                  driverPageMargin, 24, driverPageMargin, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -171,8 +172,15 @@ class _RequestsScreenState extends State<_RequestsScreen> {
                       if (Navigator.canPop(context))
                         BackButton(color: driverText),
                       Expanded(
-                        child: Text('Demandes',
-                            style: Theme.of(context).textTheme.displayLarge),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('Demandes',
+                                style:
+                                    Theme.of(context).textTheme.displayLarge),
+                          ),
+                        ),
                       ),
                       if (!_loading && !_loadFailed)
                         _RequestBadge(_pending.isEmpty
@@ -233,9 +241,14 @@ class _RequestsScreenState extends State<_RequestsScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
+      backgroundColor: AppColors.surfaceContainerLowest,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       useSafeArea: true,
       builder: (context) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+        padding: const EdgeInsets.fromLTRB(
+            driverPageMargin, 0, driverPageMargin, driverSectionGap),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -397,7 +410,7 @@ class _RequestCard extends StatelessWidget {
         fit: StackFit.passthrough,
         children: [
           Padding(
-            padding: const EdgeInsets.all(21),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -449,7 +462,8 @@ class _RequestCard extends StatelessWidget {
                 ),
                 if (request.isUniversityVerified) ...[
                   const SizedBox(height: 16),
-                  const _RequestBadge('Compte universitaire vérifié'),
+                  const _RequestBadge('Compte universitaire vérifié',
+                      verified: true),
                 ],
               ],
             ),
@@ -499,10 +513,12 @@ class _RequestField extends StatelessWidget {
 }
 
 class _RequestBadge extends StatelessWidget {
-  const _RequestBadge(this.label, {this.color = driverAccent});
+  const _RequestBadge(this.label,
+      {this.color = driverAccent, this.verified = false});
 
   final String label;
   final Color color;
+  final bool verified;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -515,13 +531,20 @@ class _RequestBadge extends StatelessWidget {
               color: color == driverAccent ? driverHighlight : color),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-          child: Text(label,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(color: color)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (verified)
+              const Padding(
+                  padding: EdgeInsets.only(right: 6),
+                  child: Icon(Icons.check, size: 14, color: driverAccent)),
+            Flexible(
+                child: Text(label,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelMedium
+                        ?.copyWith(color: color))),
+          ]),
         ),
       );
 }

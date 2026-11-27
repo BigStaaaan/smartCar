@@ -10,6 +10,19 @@ const driverOnAccent = AppColors.onPrimary;
 const driverHighlight = AppColors.primaryContainer;
 const driverOutline = AppColors.surfaceStroke;
 const driverError = AppColors.error;
+const driverPageMargin = 24.0;
+const driverSectionGap = 16.0;
+const driverActionHeight = 56.0;
+const driverCanvasGradient = LinearGradient(
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+  colors: [
+    AppColors.canvasGradientTop,
+    AppColors.canvasGradientMid,
+    AppColors.canvasGradientBottom,
+  ],
+);
+const driverFrostedSurface = AppColors.canvasGradientBottom;
 
 ThemeData driverTheme() {
   final theme = AppTheme.light;
