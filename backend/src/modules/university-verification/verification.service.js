@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { DataTypes, Op } = require('sequelize');
 const sequelize = require('../../config/database');
 const { User } = require('../../services/authentication/authentication.service');
@@ -82,7 +83,8 @@ const UniversityEmailChallenge = sequelize.models.UniversityEmailChallenge ||
     universityId: { type: DataTypes.UUID, allowNull: true },
     universityName: { type: DataTypes.STRING, allowNull: false },
     universityEmail: { type: DataTypes.STRING, allowNull: false },
-    code: { type: DataTypes.STRING(12), allowNull: false },
+    code: { type: DataTypes.STRING(128), allowNull: false },
+    attempts: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     verified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     expiresAt: { type: DataTypes.DATE, allowNull: false },
   }, {
@@ -306,14 +308,25 @@ async function requestUniversityEmailVerification(decodedToken, { universityId, 
       throw error;
     }
   }
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const recent = await UniversityEmailChallenge.findOne({
+    where: { firebaseUid: decodedToken.uid, verified: false },
+    order: [['created_at', 'DESC']],
+  });
+  if (recent && Date.now() - new Date(recent.createdAt).getTime() < 60 * 1000) {
+    const error = new Error('Please wait 60 seconds before requesting a new verification code.');
+    error.statusCode = 429;
+    throw error;
+  }
+  const rawCode = String(crypto.randomInt(100000, 999999));
+  const codeHash = crypto.createHash('sha256').update(rawCode).digest('hex');
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
   await UniversityEmailChallenge.create({
     firebaseUid: decodedToken.uid,
     universityId: uni.id,
     universityName: uni.name,
     universityEmail: email,
-    code,
+    code: codeHash,
+    attempts: 0,
     verified: false,
     expiresAt,
   });
@@ -342,7 +355,14 @@ async function confirmUniversityEmailVerification(decodedToken, { code }) {
     error.statusCode = 400;
     throw error;
   }
-  if (String(code || '').trim() !== challenge.code) {
+  if (challenge.attempts >= 5) {
+    const error = new Error('Too many failed attempts. Please request a new code.');
+    error.statusCode = 429;
+    throw error;
+  }
+  const incomingHash = crypto.createHash('sha256').update(String(code || '').trim()).digest('hex');
+  if (incomingHash !== challenge.code) {
+    await challenge.update({ attempts: (challenge.attempts || 0) + 1 });
     const error = new Error('Invalid verification code.');
     error.statusCode = 400;
     throw error;
