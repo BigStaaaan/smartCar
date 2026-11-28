@@ -98,14 +98,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Future<void> _handleSignUp() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    if (_studentCard == null) {
-      await showAuthErrorDialog(
-        context,
-        'Please add a photo of your student ID card to submit the verification request.',
-        title: 'Student Card Required',
-      );
-      return;
-    }
     if (!_acceptedTerms) {
       await showAuthErrorDialog(
         context,
