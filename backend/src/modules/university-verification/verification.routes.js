@@ -39,9 +39,22 @@ router.patch(
 
 router.get('/status', authenticate, asyncHandler(controller.getStatus));
 router.post(
+  '/university-email/request',
+  authenticate,
+  asyncHandler(controller.requestUniversityEmailVerification),
+);
+router.post(
+  '/university-email/confirm',
+  authenticate,
+  asyncHandler(controller.confirmUniversityEmailVerification),
+);
+router.post(
   '/request',
   authenticate,
-  upload.single('studentCard'),
+  upload.fields([
+    { name: 'studentCard', maxCount: 1 },
+    { name: 'profilePhoto', maxCount: 1 },
+  ]),
   asyncHandler(controller.submitRequest),
 );
 
@@ -68,6 +81,12 @@ router.get(
   authenticate,
   authenticate.requireAdmin,
   asyncHandler(controller.previewCard),
+);
+router.get(
+  '/admin/requests/:firebaseUid/profile-photo',
+  authenticate,
+  authenticate.requireAdmin,
+  asyncHandler(controller.previewProfilePhoto),
 );
 
 module.exports = router;
