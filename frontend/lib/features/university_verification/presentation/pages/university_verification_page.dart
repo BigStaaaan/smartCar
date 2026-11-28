@@ -159,7 +159,7 @@ class _UniversityVerificationPageState
                     children: [
                       Text(
                         'Sélectionner votre université',
-                        style: AppTypography.headlineSmall,
+                        style: AppTypography.headlineSm,
                       ),
                       const SizedBox(height: 12),
                       TextField(
@@ -298,20 +298,20 @@ class _UniversityVerificationPageState
                   const Icon(Icons.hourglass_top_rounded, color: AppColors.primary, size: 28),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text('Vérification en cours', style: AppTypography.headlineSmall),
+                    child: Text('Vérification en cours', style: AppTypography.headlineSm),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 'Votre demande de vérification a été envoyée. Notre équipe Support examine actuellement vos informations.',
-                style: AppTypography.bodyMedium,
+                style: AppTypography.bodyMd,
               ),
               if (submittedAt.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   'Date de soumission : ${submittedAt.split('T').first}',
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.onSurfaceVariant),
+                  style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant),
                 ),
               ],
               const SizedBox(height: 16),
@@ -349,14 +349,14 @@ class _UniversityVerificationPageState
                   const Icon(Icons.verified_rounded, color: Colors.green, size: 28),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text('Identité vérifiée', style: AppTypography.headlineSmall),
+                    child: Text('Identité vérifiée', style: AppTypography.headlineSm),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 'Félicitations ! Votre identité universitaire a été vérifiée. Vous pouvez maintenant accéder à toutes les fonctionnalités de SmartCar.',
-                style: AppTypography.bodyMedium,
+                style: AppTypography.bodyMd,
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
@@ -384,14 +384,14 @@ class _UniversityVerificationPageState
                   const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 28),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text('Demande refusée', style: AppTypography.headlineSmall),
+                    child: Text('Demande refusée', style: AppTypography.headlineSm),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 'Votre demande de vérification n\'a pas été acceptée. Consultez le motif du refus, corrigez vos informations et soumettez une nouvelle demande.',
-                style: AppTypography.bodyMedium,
+                style: AppTypography.bodyMd,
               ),
               const SizedBox(height: 12),
               Container(
@@ -404,7 +404,7 @@ class _UniversityVerificationPageState
                 ),
                 child: Text(
                   'Motif : $reason',
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
+                  style: AppTypography.bodyMd.copyWith(color: AppColors.error),
                 ),
               ),
               const SizedBox(height: 16),
@@ -442,15 +442,15 @@ class _UniversityVerificationPageState
             _isEditingDeclined
                 ? 'Corriger et soumettre à nouveau'
                 : 'Vérification de l\'identité universitaire',
-            style: AppTypography.headlineMedium,
+            style: AppTypography.headlineMd,
           ),
           const SizedBox(height: 8),
           Text(
             'Veuillez renseigner vos informations universitaires et importer votre carte d\'étudiant ou de personnel.',
-            style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurfaceVariant),
+            style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
           ),
           const SizedBox(height: 20),
-          Text('Type de compte', style: AppTypography.labelMedium),
+          Text('Type de compte', style: AppTypography.labelMd),
           const SizedBox(height: 8),
           SegmentedButton<String>(
             segments: const [
@@ -461,7 +461,7 @@ class _UniversityVerificationPageState
             onSelectionChanged: (val) => setState(() => _accountType = val.first),
           ),
           const SizedBox(height: 16),
-          Text('Université', style: AppTypography.labelMedium),
+          Text('Université', style: AppTypography.labelMd),
           const SizedBox(height: 8),
           InkWell(
             onTap: _openUniversityPicker,
@@ -475,8 +475,8 @@ class _UniversityVerificationPageState
               child: Text(
                 _selectedUniversity?['name']?.toString() ?? 'Sélectionner une université',
                 style: _selectedUniversity == null
-                    ? AppTypography.bodyMedium.copyWith(color: AppColors.onSurfaceVariant)
-                    : AppTypography.bodyMedium,
+                    ? AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant)
+                    : AppTypography.bodyMd,
               ),
             ),
           ),
@@ -510,7 +510,7 @@ class _UniversityVerificationPageState
             },
           ),
           const SizedBox(height: 20),
-          Text('Document d\'identification universitaire (JPG, PNG)', style: AppTypography.labelMedium),
+          Text('Document d\'identification universitaire (JPG, PNG)', style: AppTypography.labelMd),
           const SizedBox(height: 8),
           if (_cardBytes != null) ...[
             ClipRRect(
@@ -544,7 +544,7 @@ class _UniversityVerificationPageState
           ),
           if (_error != null) ...[
             const SizedBox(height: 16),
-            Text(_error!, style: AppTypography.bodySmall.copyWith(color: AppColors.error)),
+            Text(_error!, style: AppTypography.bodySm.copyWith(color: AppColors.error)),
           ],
           const SizedBox(height: 24),
           FilledButton(
@@ -579,7 +579,11 @@ class _UniversityVerificationPageState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const SmartCarLogo(compact: true),
+        title: const SmartCarLogo(
+          variant: SmartCarLogoVariant.horizontal,
+          symbolSize: 28,
+          wordmarkFontSize: 20,
+        ),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
