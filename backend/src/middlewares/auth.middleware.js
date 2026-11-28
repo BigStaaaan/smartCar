@@ -16,12 +16,14 @@ async function authenticate(req, res, next) {
 
 module.exports = authenticate;
 module.exports.requireAdmin = function requireAdmin(req, res, next) {
+  const role = String(req.user?.role || '').toUpperCase();
   const isAdmin =
     req.user?.admin === true ||
-    req.user?.role === 'ADMIN' ||
+    role === 'ADMIN' ||
+    role === 'SUPPORT' ||
     req.user?.claims?.admin === true;
   if (!isAdmin) {
-    return res.status(403).json({ error: 'Administrator access required' });
+    return res.status(403).json({ error: 'Administrator or Support access required' });
   }
   return next();
 };
