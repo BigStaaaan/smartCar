@@ -23,9 +23,21 @@ async function getStatus(req, res) {
   return res.json({ request });
 }
 
+async function requestUniversityEmailVerification(req, res) {
+  const service = req.verificationService;
+  const result = await service.requestUniversityEmailVerification(req.user, req.body);
+  return res.json(result);
+}
+
+async function confirmUniversityEmailVerification(req, res) {
+  const service = req.verificationService;
+  const result = await service.confirmUniversityEmailVerification(req.user, req.body);
+  return res.json(result);
+}
+
 async function submitRequest(req, res) {
   const service = req.verificationService;
-  const request = await service.submitRequest(req.user, req.body, req.file);
+  const request = await service.submitRequest(req.user, req.body, req.files || req.file);
   return res.status(201).json({ request });
 }
 
@@ -63,14 +75,23 @@ async function previewCard(req, res) {
   return res.sendFile(filePath);
 }
 
+async function previewProfilePhoto(req, res) {
+  const service = req.verificationService;
+  const filePath = await service.getPrivateProfilePhoto(req.params.firebaseUid);
+  return res.sendFile(filePath);
+}
+
 module.exports = {
   listUniversities,
   createUniversity,
   updateUniversity,
   getStatus,
+  requestUniversityEmailVerification,
+  confirmUniversityEmailVerification,
   submitRequest,
   listRequests,
   getRequest,
   decideRequest,
   previewCard,
+  previewProfilePhoto,
 };
