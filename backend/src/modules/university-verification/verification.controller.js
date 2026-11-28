@@ -1,3 +1,22 @@
+async function listUniversities(req, res) {
+  const service = req.verificationService;
+  const includeInactive = req.query.includeInactive === 'true';
+  const universities = await service.listUniversities({ includeInactive });
+  return res.json({ universities });
+}
+
+async function createUniversity(req, res) {
+  const service = req.verificationService;
+  const university = await service.createUniversity(req.body);
+  return res.status(201).json({ university });
+}
+
+async function updateUniversity(req, res) {
+  const service = req.verificationService;
+  const university = await service.updateUniversity(req.params.id, req.body);
+  return res.json({ university });
+}
+
 async function getStatus(req, res) {
   const service = req.verificationService;
   const request = await service.getStatus(req.user);
@@ -12,7 +31,12 @@ async function submitRequest(req, res) {
 
 async function listRequests(req, res) {
   const service = req.verificationService;
-  const requests = await service.listRequests(req.query.status);
+  const requests = await service.listRequests({
+    status: req.query.status,
+    universityId: req.query.universityId,
+    accountType: req.query.accountType,
+    search: req.query.search,
+  });
   return res.json({ requests });
 }
 
@@ -40,6 +64,9 @@ async function previewCard(req, res) {
 }
 
 module.exports = {
+  listUniversities,
+  createUniversity,
+  updateUniversity,
   getStatus,
   submitRequest,
   listRequests,
