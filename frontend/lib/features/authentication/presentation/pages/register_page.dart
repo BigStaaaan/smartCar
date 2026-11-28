@@ -59,43 +59,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return 'Strong';
   }
 
-  Future<Map<String, String>> _studentCardPayload() async {
-    final card = _studentCard;
-    if (card == null) return <String, String>{};
-    final bytes = await card.readAsBytes();
-    return <String, String>{
-      'studentCard': base64Encode(bytes),
-      'studentCardName': card.name,
-      'studentCardMimeType': card.mimeType ?? 'image/jpeg',
-    };
-  }
-
-  Future<void> _pickStudentCard() async {
-    setState(() => _isPickingStudentCard = true);
-    try {
-      final card = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-        maxWidth: 1600,
-      );
-      if (!mounted) return;
-      if (card == null) return;
-      final bytes = await card.readAsBytes();
-      if (!mounted) return;
-      if (bytes.lengthInBytes > 5 * 1024 * 1024) {
-        await showAuthErrorDialog(
-          context,
-          'Your student ID card must be smaller than 5 MB.',
-          title: 'Image Too Large',
-        );
-        return;
-      }
-      setState(() => _studentCard = card);
-    } finally {
-      if (mounted) setState(() => _isPickingStudentCard = false);
-    }
-  }
-
   Future<void> _pickDateOfBirth() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -133,6 +96,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim();
     final success = await ref.read(authProvider.notifier).signUpWithEmail(
           fullName: fullName,
+          university: '',
           email: _emailController.text.trim(),
           password: _passwordController.text,
           accountType:
@@ -313,44 +277,91 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            _fieldLabel('Full Legal Name'),
+                            _fieldLabel('Prénom'),
                             const SizedBox(height: 5),
                             Container(
                               height: 52,
                               decoration: _fieldBox,
                               child: TextFormField(
-                                controller: _nameController,
+                                controller: _firstNameController,
                                 style: AppTypography.bodyMd.copyWith(
                                   color: AppColors.onSurface,
                                   fontSize: 14,
                                 ),
                                 validator: (value) =>
                                     value == null || value.trim().isEmpty
-                                        ? 'Please enter your full name'
+                                        ? 'Veuillez saisir votre prénom'
                                         : null,
                                 decoration: _inputDecoration(
-                                  hint: 'e.g. Alex Morgan',
+                                  hint: 'ex. Youssef',
                                   icon: Icons.person_outline_rounded,
                                 ),
                               ),
                             ),
                             const SizedBox(height: 10),
-                            _fieldLabel('University Campus'),
+                            _fieldLabel('Nom'),
                             const SizedBox(height: 5),
                             Container(
                               height: 52,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
                               decoration: _fieldBox,
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.school_outlined,
-                                      size: 18, color: AppColors.outline),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: _university,
+                              child: TextFormField(
+                                controller: _lastNameController,
+                                style: AppTypography.bodyMd.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontSize: 14,
+                                ),
+                                validator: (value) =>
+                                    value == null || value.trim().isEmpty
+                                        ? 'Veuillez saisir votre nom'
+                                        : null,
+                                decoration: _inputDecoration(
+                                  hint: 'ex. El Amrani',
+                                  icon: Icons.person_outline_rounded,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _fieldLabel('Date de naissance'),
+                            const SizedBox(height: 5),
+                            InkWell(
+                              onTap: _pickDateOfBirth,
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                height: 52,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: _fieldBox,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.cake_outlined,
+                                        size: 18, color: AppColors.outline),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _dateOfBirth == null
+                                          ? 'Sélectionner une date'
+                                          : '${_dateOfBirth!.day.toString().padLeft(2, '0')}/${_dateOfBirth!.month.toString().padLeft(2, '0')}/${_dateOfBirth!.year}',
+                                      style: AppTypography.bodyMd.copyWith(
+                                        color: _dateOfBirth == null
+                                            ? AppColors.outline
+                                            : AppColors.onSurface,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _fieldLabel('Sexe'),
+                            const SizedBox(height: 5),
+                            SegmentedButton<String>(
+                              segments: const [
+                                ButtonSegment(value: 'male', label: Text('Homme')),
+                                ButtonSegment(value: 'female', label: Text('Femme')),
+                              ],
+                              selected: {_sex},
+                              onSelectionChanged: (val) =>
+                                  setState(() => _sex = val.first),
+                            ),
                                         isExpanded: true,
                                         icon: const Icon(
                                             Icons.keyboard_arrow_down_rounded,
