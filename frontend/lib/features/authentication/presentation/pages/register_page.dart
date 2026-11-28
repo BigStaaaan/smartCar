@@ -23,18 +23,19 @@ class RegisterPage extends ConsumerStatefulWidget {
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _university = 'Faculté des Sciences d’Agadir';
+  DateTime? _dateOfBirth;
+  String _sex = 'male';
   bool _obscurePassword = true;
   bool _acceptedTerms = false;
-  XFile? _studentCard;
-  bool _isPickingStudentCard = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -95,28 +96,48 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
   }
 
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateOfBirth ?? DateTime(now.year - 20, now.month, now.day),
+      firstDate: DateTime(1940),
+      lastDate: now,
+    );
+    if (picked != null && mounted) {
+      setState(() => _dateOfBirth = picked);
+    }
+  }
+
   Future<void> _handleSignUp() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
+    if (_dateOfBirth == null) {
+      await showAuthErrorDialog(
+        context,
+        'Veuillez sélectionner votre date de naissance.',
+        title: 'Date de naissance requise',
+      );
+      return;
+    }
     if (!_acceptedTerms) {
       await showAuthErrorDialog(
         context,
-        'You must accept the carpooling rules before creating your account.',
-        title: 'Terms Required',
+        'Vous devez accepter les règles de covoiturage avant de créer votre compte.',
+        title: 'Conditions requises',
       );
       return;
     }
 
-    final cardPayload = await _studentCardPayload();
+    final fullName =
+        '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim();
     final success = await ref.read(authProvider.notifier).signUpWithEmail(
-          fullName: _nameController.text.trim(),
-          university: _university,
+          fullName: fullName,
           email: _emailController.text.trim(),
           password: _passwordController.text,
           accountType:
-              EmailValidator.getAccountType(_emailController.text) ??
-                  'STUDENT',
-          studentCardPayload: cardPayload,
+              EmailValidator.getAccountType(_emailController.text) ?? 'STUDENT',
+          studentCardPayload: const <String, String>{},
         );
     if (!mounted) return;
     if (success) {
@@ -137,26 +158,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Future<void> _handleGoogleSignUp() async {
-    if (_studentCard == null) {
-      await showAuthErrorDialog(
-        context,
-        'Please add a photo of your student ID card before continuing.',
-        title: 'Student Card Required',
-      );
-      return;
-    }
-    final cardPayload = await _studentCardPayload();
     final success = await ref
         .read(authProvider.notifier)
-        .signInWithGoogle(studentCardPayload: cardPayload);
+        .signInWithGoogle(studentCardPayload: const <String, String>{});
     if (!mounted) return;
     if (success) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const HomePage()),
+        MaterialPageRoute<void>(builder: (_) => const EmailVerificationPage()),
       );
     } else {
       final message =
-          ref.read(authProvider).errorMessage ?? 'Google Sign-In failed.';
+          ref.read(authProvider).errorMessage ?? 'Échec de la connexion Google.';
       await showAuthErrorDialog(
         context,
         message,
