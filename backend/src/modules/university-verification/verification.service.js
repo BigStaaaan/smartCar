@@ -55,6 +55,8 @@ const UniversityVerificationRequest = sequelize.models.UniversityVerificationReq
     universityName: { type: DataTypes.STRING, allowNull: false },
     universityEmail: { type: DataTypes.STRING, allowNull: false },
     documentStoragePath: { type: DataTypes.STRING, allowNull: false },
+    profilePhotoStoragePath: { type: DataTypes.STRING, allowNull: true },
+    universityEmailVerified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     status: {
       type: DataTypes.ENUM('pending', 'approved', 'declined'),
       allowNull: false,
@@ -66,6 +68,25 @@ const UniversityVerificationRequest = sequelize.models.UniversityVerificationReq
     submittedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
   }, {
     tableName: 'university_verification_requests',
+    underscored: true,
+  });
+
+const UniversityEmailChallenge = sequelize.models.UniversityEmailChallenge ||
+  sequelize.define('UniversityEmailChallenge', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    firebaseUid: { type: DataTypes.STRING, allowNull: false },
+    universityId: { type: DataTypes.UUID, allowNull: true },
+    universityName: { type: DataTypes.STRING, allowNull: false },
+    universityEmail: { type: DataTypes.STRING, allowNull: false },
+    code: { type: DataTypes.STRING(12), allowNull: false },
+    verified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    expiresAt: { type: DataTypes.DATE, allowNull: false },
+  }, {
+    tableName: 'university_email_challenges',
     underscored: true,
   });
 
@@ -85,6 +106,7 @@ async function ensureSchema() {
   await User.sync();
   await University.sync();
   await UniversityVerificationRequest.sync();
+  await UniversityEmailChallenge.sync();
   await VerificationAudit.sync();
   const count = await University.count();
   if (count === 0) {
@@ -196,6 +218,20 @@ async function updateUniversity(id, { name, emailDomains, isActive }) {
   };
 }
 
+async function findUniversityByEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  if (!normalized.includes('@')) return null;
+  const domain = normalized.split('@')[1];
+  const universities = await University.findAll({ where: { isActive: true } });
+  for (const uni of universities) {
+    const domains = parseDomains(uni.emailDomains);
+    if (domains.some((d) => domain === d.toLowerCase() || domain.endsWith(`.${d.toLowerCase()}`))) {
+      return uni;
+    }
+  }
+  return null;
+}
+
 async function getStatus(decodedToken) {
   await ensureSchema();
   const user = await User.findOne({ where: { firebaseUid: decodedToken.uid } });
@@ -204,7 +240,120 @@ async function getStatus(decodedToken) {
     where: { firebaseUid: decodedToken.uid },
     order: [['submittedAt', 'DESC']],
   });
-  return publicRequest(user, latestRequest);
+  const base = publicRequest(user, latestRequest);
+  const matchedUniversity = await findUniversityByEmail(decodedToken.email || user.email);
+  const challenge = await UniversityEmailChallenge.findOne({
+    where: { firebaseUid: decodedToken.uid },
+    order: [['created_at', 'DESC']],
+  });
+
+  let flowState = base.status;
+  if (decodedToken.email_verified !== true) {
+    flowState = 'email_verification_required';
+  } else if (base.status === 'not_submitted') {
+    if (matchedUniversity) {
+      flowState = 'profile_completion_required';
+    } else if (challenge?.verified) {
+      flowState = 'profile_completion_required';
+    } else if (challenge && new Date(challenge.expiresAt) > new Date()) {
+      flowState = 'university_email_verification_required';
+    } else {
+      flowState = 'university_email_required';
+    }
+  }
+
+  return {
+    ...base,
+    flowState,
+    isUniversityRegistrationEmail: Boolean(matchedUniversity),
+    matchedUniversity: matchedUniversity
+      ? { id: matchedUniversity.id, name: matchedUniversity.name, emailDomains: parseDomains(matchedUniversity.emailDomains) }
+      : null,
+    verifiedUniversityEmail: matchedUniversity
+      ? (decodedToken.email || user.email)
+      : (challenge?.verified ? challenge.universityEmail : base.universityEmail),
+    pendingUniversityEmail: challenge && !challenge.verified ? challenge.universityEmail : null,
+  };
+}
+
+async function requestUniversityEmailVerification(decodedToken, { universityId, universityEmail }) {
+  await ensureSchema();
+  const email = String(universityEmail || '').trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    const error = new Error('Valid university email is required.');
+    error.statusCode = 400;
+    throw error;
+  }
+  let uni = null;
+  if (universityId) {
+    uni = await University.findByPk(universityId);
+  } else {
+    uni = await findUniversityByEmail(email);
+  }
+  if (!uni || !uni.isActive) {
+    const error = new Error('Selected university is invalid or inactive.');
+    error.statusCode = 400;
+    throw error;
+  }
+  const domains = parseDomains(uni.emailDomains);
+  if (domains.length > 0) {
+    const domain = email.split('@')[1];
+    const ok = domains.some((d) => domain === d.toLowerCase() || domain.endsWith(`.${d.toLowerCase()}`));
+    if (!ok) {
+      const error = new Error(`University email must belong to: ${domains.join(', ')}`);
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  await UniversityEmailChallenge.create({
+    firebaseUid: decodedToken.uid,
+    universityId: uni.id,
+    universityName: uni.name,
+    universityEmail: email,
+    code,
+    verified: false,
+    expiresAt,
+  });
+  return {
+    universityId: uni.id,
+    universityName: uni.name,
+    universityEmail: email,
+    expiresAt,
+    message: 'Verification code sent to university email.',
+  };
+}
+
+async function confirmUniversityEmailVerification(decodedToken, { code }) {
+  await ensureSchema();
+  const challenge = await UniversityEmailChallenge.findOne({
+    where: { firebaseUid: decodedToken.uid },
+    order: [['created_at', 'DESC']],
+  });
+  if (!challenge || challenge.verified) {
+    const error = new Error('No pending university email verification found.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (new Date(challenge.expiresAt) < new Date()) {
+    const error = new Error('Verification code has expired.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (String(code || '').trim() !== challenge.code) {
+    const error = new Error('Invalid verification code.');
+    error.statusCode = 400;
+    throw error;
+  }
+  await challenge.update({ verified: true });
+  return {
+    verified: true,
+    universityId: challenge.universityId,
+    universityName: challenge.universityName,
+    universityEmail: challenge.universityEmail,
+  };
 }
 
 async function submitRequest(decodedToken, body, file) {
@@ -484,18 +633,43 @@ async function getPrivateCard(firebaseUid) {
   return filePath;
 }
 
+async function getPrivateProfilePhoto(firebaseUid) {
+  await ensureSchema();
+  const latestRequest = await UniversityVerificationRequest.findOne({
+    where: { firebaseUid },
+    order: [['submittedAt', 'DESC']],
+  });
+  const photoPath = latestRequest?.profilePhotoStoragePath;
+  if (!photoPath) {
+    const error = new Error('Profile photo not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+  const filePath = path.resolve(photoPath);
+  if (!fs.existsSync(filePath)) {
+    const error = new Error('Profile photo file not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+  return filePath;
+}
+
 module.exports = {
   VerificationAudit,
   University,
   UniversityVerificationRequest,
+  UniversityEmailChallenge,
   publicRequest,
   listUniversities,
   createUniversity,
   updateUniversity,
   getStatus,
+  requestUniversityEmailVerification,
+  confirmUniversityEmailVerification,
   submitRequest,
   listRequests,
   getRequest,
   decideRequest,
   getPrivateCard,
+  getPrivateProfilePhoto,
 };
