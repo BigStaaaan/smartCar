@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../home/presentation/pages/home_page.dart';
+import '../../../university_verification/presentation/pages/university_verification_page.dart';
 
 class EmailVerificationPage extends StatefulWidget {
   const EmailVerificationPage({super.key});
@@ -56,8 +57,9 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user?.emailVerified == true) {
         final idToken = await user?.getIdToken(true);
+        String verificationStatus = 'not_submitted';
         if (idToken != null) {
-          await Dio(
+          final dio = Dio(
             BaseOptions(
               baseUrl: const String.fromEnvironment(
                 'API_BASE_URL',
@@ -65,17 +67,25 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                     ? 'http://127.0.0.1:3000/api/v1'
                     : 'http://10.0.2.2:3000/api/v1',
               ),
-            ),
-          ).get(
-            '/auth/verification-status',
-            options: Options(
               headers: {'Authorization': 'Bearer $idToken'},
             ),
           );
+          await dio.get('/auth/verification-status');
+          try {
+            final res = await dio.get('/verification/status');
+            verificationStatus =
+                (res.data?['request']?['status'] ?? 'not_submitted')
+                    .toString()
+                    .toLowerCase();
+          } catch (_) {}
         }
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (_) => const HomePage()),
+          MaterialPageRoute<void>(
+            builder: (_) => verificationStatus == 'approved'
+                ? const HomePage()
+                : const UniversityVerificationPage(),
+          ),
         );
       } else {
         setState(
