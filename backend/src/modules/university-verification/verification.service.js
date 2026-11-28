@@ -23,41 +23,194 @@ const VerificationAudit = sequelize.models.VerificationAudit ||
     underscored: true,
   });
 
+const University = sequelize.models.University ||
+  sequelize.define('University', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    name: { type: DataTypes.STRING, allowNull: false, unique: true },
+    emailDomains: { type: DataTypes.TEXT, allowNull: true },
+    isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+  }, {
+    tableName: 'universities',
+    underscored: true,
+  });
+
+const UniversityVerificationRequest = sequelize.models.UniversityVerificationRequest ||
+  sequelize.define('UniversityVerificationRequest', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    userId: { type: DataTypes.UUID, allowNull: true },
+    firebaseUid: { type: DataTypes.STRING, allowNull: false },
+    accountType: {
+      type: DataTypes.ENUM('student', 'staff'),
+      allowNull: false,
+    },
+    universityId: { type: DataTypes.UUID, allowNull: true },
+    universityName: { type: DataTypes.STRING, allowNull: false },
+    universityEmail: { type: DataTypes.STRING, allowNull: false },
+    documentStoragePath: { type: DataTypes.STRING, allowNull: false },
+    status: {
+      type: DataTypes.ENUM('pending', 'approved', 'declined'),
+      allowNull: false,
+      defaultValue: 'pending',
+    },
+    rejectionReason: { type: DataTypes.TEXT, allowNull: true },
+    reviewedBy: { type: DataTypes.STRING, allowNull: true },
+    reviewedAt: { type: DataTypes.DATE, allowNull: true },
+    submittedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+  }, {
+    tableName: 'university_verification_requests',
+    underscored: true,
+  });
+
+const DEFAULT_UNIVERSITIES = [
+  { name: 'Université des Sciences et de la Technologie Houari Boumediene (USTHB)', emailDomains: JSON.stringify(['usthb.dz', 'etu.usthb.dz']) },
+  { name: "Université d'Alger 1 Benyoucef Benkhedda", emailDomains: JSON.stringify(['univ-alger.dz']) },
+  { name: 'École Nationale Polytechnique (ENP)', emailDomains: JSON.stringify(['g.enp.edu.dz', 'enp.edu.dz']) },
+  { name: 'Université Frères Mentouri Constantine 1', emailDomains: JSON.stringify(['umc.edu.dz']) },
+  { name: "Université d'Oran 1 Ahmed Ben Bella", emailDomains: JSON.stringify(['univ-oran1.dz']) },
+  { name: 'Université Abderrahmane Mira de Béjaïa', emailDomains: JSON.stringify(['univ-bejaia.dz']) },
+];
+
+let schemaReady = false;
 async function ensureSchema() {
+  if (schemaReady) return;
   await sequelize.authenticate();
   await User.sync();
+  await University.sync();
+  await UniversityVerificationRequest.sync();
   await VerificationAudit.sync();
+  const count = await University.count();
+  if (count === 0) {
+    await University.bulkCreate(DEFAULT_UNIVERSITIES);
+  }
+  schemaReady = true;
 }
 
-function publicRequest(user) {
-  if (!user) return null;
+function parseDomains(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return String(raw).split(',').map((s) => s.trim()).filter(Boolean);
+  }
+}
+
+function normalizeStatus(status) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'approved') return 'approved';
+  if (s === 'pending') return 'pending';
+  if (s === 'rejected' || s === 'declined' || s === 'requires_resubmission') return 'declined';
+  return 'not_submitted';
+}
+
+function publicRequest(user, latestRequest = null) {
+  if (!user && !latestRequest) return null;
+  const rawStatus = latestRequest?.status || user?.verificationStatus || 'NOT_SUBMITTED';
+  const normalized = normalizeStatus(rawStatus);
   return {
-    firebaseUid: user.firebaseUid,
-    fullName: user.fullName,
-    email: user.email,
-    accountType: user.accountType,
-    university: user.university,
-    studentId: user.studentId,
-    faculty: user.faculty,
-    department: user.department,
-    studentCardUrl: user.studentCardUrl,
-    status: user.verificationStatus || 'NOT_SUBMITTED',
-    submittedAt: user.submittedAt,
-    reviewedAt: user.reviewedAt,
-    rejectionReason: user.rejectionReason,
+    id: latestRequest?.id || null,
+    firebaseUid: latestRequest?.firebaseUid || user?.firebaseUid,
+    fullName: user?.fullName || null,
+    email: user?.email || null,
+    accountType: latestRequest?.accountType || (user?.accountType ? String(user.accountType).toLowerCase() : null),
+    universityId: latestRequest?.universityId || null,
+    university: latestRequest?.universityName || user?.university || null,
+    universityEmail: latestRequest?.universityEmail || null,
+    studentId: user?.studentId || null,
+    faculty: user?.faculty || null,
+    department: user?.department || null,
+    hasDocument: Boolean(latestRequest?.documentStoragePath || user?.studentCardUrl),
+    status: normalized,
+    verificationStatus: user?.verificationStatus || 'NOT_SUBMITTED',
+    submittedAt: latestRequest?.submittedAt || user?.submittedAt || null,
+    reviewedAt: latestRequest?.reviewedAt || user?.reviewedAt || null,
+    reviewedBy: latestRequest?.reviewedBy || null,
+    rejectionReason: latestRequest?.rejectionReason ?? user?.rejectionReason ?? null,
+  };
+}
+
+async function listUniversities({ includeInactive = false } = {}) {
+  await ensureSchema();
+  const where = includeInactive ? {} : { isActive: true };
+  const rows = await University.findAll({ where, order: [['name', 'ASC']] });
+  return rows.map((u) => ({
+    id: u.id,
+    name: u.name,
+    emailDomains: parseDomains(u.emailDomains),
+    isActive: u.isActive,
+  }));
+}
+
+async function createUniversity({ name, emailDomains }) {
+  await ensureSchema();
+  const trimmedName = String(name || '').trim();
+  if (!trimmedName) {
+    const error = new Error('University name is required.');
+    error.statusCode = 400;
+    throw error;
+  }
+  const domains = parseDomains(emailDomains);
+  const created = await University.create({
+    name: trimmedName,
+    emailDomains: domains.length ? JSON.stringify(domains) : null,
+    isActive: true,
+  });
+  return {
+    id: created.id,
+    name: created.name,
+    emailDomains: domains,
+    isActive: created.isActive,
+  };
+}
+
+async function updateUniversity(id, { name, emailDomains, isActive }) {
+  await ensureSchema();
+  const uni = await University.findByPk(id);
+  if (!uni) {
+    const error = new Error('University not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+  const updates = {};
+  if (name !== undefined) updates.name = String(name).trim();
+  if (emailDomains !== undefined) {
+    const domains = parseDomains(emailDomains);
+    updates.emailDomains = domains.length ? JSON.stringify(domains) : null;
+  }
+  if (isActive !== undefined) updates.isActive = Boolean(isActive);
+  await uni.update(updates);
+  return {
+    id: uni.id,
+    name: uni.name,
+    emailDomains: parseDomains(uni.emailDomains),
+    isActive: uni.isActive,
   };
 }
 
 async function getStatus(decodedToken) {
   await ensureSchema();
   const user = await User.findOne({ where: { firebaseUid: decodedToken.uid } });
-  return publicRequest(user);
+  if (!user) return null;
+  const latestRequest = await UniversityVerificationRequest.findOne({
+    where: { firebaseUid: decodedToken.uid },
+    order: [['submittedAt', 'DESC']],
+  });
+  return publicRequest(user, latestRequest);
 }
 
 async function submitRequest(decodedToken, body, file) {
   await ensureSchema();
   if (!file) {
-    const error = new Error('A student card image is required.');
+    const error = new Error('A university identification document image is required.');
     error.statusCode = 400;
     throw error;
   }
@@ -82,14 +235,54 @@ async function submitRequest(decodedToken, body, file) {
     throw error;
   }
 
-  const studentId = String(body.studentId || '').trim();
-  const university = String(body.university || user.university || '').trim();
-  const faculty = String(body.faculty || '').trim();
-  const department = String(body.department || '').trim();
-  if (!studentId || !university || !faculty) {
-    const error = new Error('Student ID, university and faculty are required.');
+  const existingPending = await UniversityVerificationRequest.findOne({
+    where: { firebaseUid: decodedToken.uid, status: 'pending' },
+  });
+  if (existingPending) {
+    const error = new Error('A verification request is already pending review.');
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const accountType = String(body.accountType || 'student').trim().toLowerCase();
+  if (!['student', 'staff'].includes(accountType)) {
+    const error = new Error('Account type must be student or staff.');
     error.statusCode = 400;
     throw error;
+  }
+
+  const universityId = body.universityId ? String(body.universityId).trim() : null;
+  let universityRecord = null;
+  if (universityId) {
+    universityRecord = await University.findByPk(universityId);
+    if (!universityRecord || !universityRecord.isActive) {
+      const error = new Error('Selected university is invalid or inactive.');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  const universityName = universityRecord?.name || String(body.university || user.university || '').trim();
+  const universityEmail = String(body.universityEmail || '').trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!universityName || !universityEmail || !emailRegex.test(universityEmail)) {
+    const error = new Error('Valid university and university email are required.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (universityRecord) {
+    const allowedDomains = parseDomains(universityRecord.emailDomains);
+    if (allowedDomains.length > 0) {
+      const emailDomain = universityEmail.split('@')[1];
+      const matches = allowedDomains.some((d) => emailDomain === d.toLowerCase() || emailDomain.endsWith(`.${d.toLowerCase()}`));
+      if (!matches) {
+        const error = new Error(`University email must belong to one of the configured domains: ${allowedDomains.join(', ')}`);
+        error.statusCode = 400;
+        throw error;
+      }
+    }
   }
 
   const uploadDirectory = path.join(process.cwd(), 'private', 'student-cards');
@@ -103,35 +296,85 @@ async function submitRequest(decodedToken, body, file) {
   const filePath = path.join(uploadDirectory, fileName);
   fs.writeFileSync(filePath, file.buffer);
 
+  const now = new Date();
+  const previousCount = await UniversityVerificationRequest.count({
+    where: { firebaseUid: decodedToken.uid },
+  });
+
+  const createdRequest = await UniversityVerificationRequest.create({
+    userId: user.id,
+    firebaseUid: decodedToken.uid,
+    accountType,
+    universityId: universityRecord?.id || null,
+    universityName,
+    universityEmail,
+    documentStoragePath: filePath,
+    status: 'pending',
+    submittedAt: now,
+  });
+
   await user.update({
-    university,
-    studentId,
-    faculty,
-    department,
+    accountType: accountType.toUpperCase(),
+    university: universityName,
+    studentId: body.studentId ? String(body.studentId).trim() : user.studentId,
+    faculty: body.faculty ? String(body.faculty).trim() : user.faculty,
+    department: body.department ? String(body.department).trim() : user.department,
     studentCardUrl: filePath,
     verificationStatus: 'PENDING',
-    submittedAt: new Date(),
+    submittedAt: now,
     reviewedAt: null,
     rejectionReason: null,
     universityVerified: false,
   });
+
   await VerificationAudit.create({
     firebaseUid: decodedToken.uid,
-    action: 'SUBMITTED',
+    action: previousCount > 0 ? 'RESUBMISSION' : 'SUBMITTED',
     actorUid: decodedToken.uid,
   });
-  return publicRequest(user);
+
+  return publicRequest(user, createdRequest);
 }
 
-async function listRequests(status) {
+async function listRequests(filters = {}) {
   await ensureSchema();
+  const statusFilter = typeof filters === 'string' ? filters : filters.status;
+  const universityId = typeof filters === 'object' ? filters.universityId : null;
+  const accountType = typeof filters === 'object' ? filters.accountType : null;
+  const search = typeof filters === 'object' ? String(filters.search || '').trim().toLowerCase() : '';
+
   const where = {};
-  if (status && status !== 'ALL') where.verificationStatus = status;
-  const users = await User.findAll({
+  if (statusFilter && statusFilter.toUpperCase() !== 'ALL') {
+    const normalized = normalizeStatus(statusFilter);
+    if (['pending', 'approved', 'declined'].includes(normalized)) {
+      where.status = normalized;
+    }
+  }
+  if (universityId) where.universityId = universityId;
+  if (accountType && ['student', 'staff'].includes(accountType.toLowerCase())) {
+    where.accountType = accountType.toLowerCase();
+  }
+
+  const requests = await UniversityVerificationRequest.findAll({
     where,
-    order: [['submitted_at', 'DESC']],
+    order: [['submittedAt', 'DESC']],
   });
-  return users.map(publicRequest);
+
+  const uids = [...new Set(requests.map((r) => r.firebaseUid))];
+  const users = uids.length
+    ? await User.findAll({ where: { firebaseUid: { [Op.in]: uids } } })
+    : [];
+  const userMap = new Map(users.map((u) => [u.firebaseUid, u]));
+
+  let results = requests.map((reqRow) => publicRequest(userMap.get(reqRow.firebaseUid), reqRow));
+  if (search) {
+    results = results.filter((item) =>
+      [item.fullName, item.email, item.universityEmail, item.university]
+        .filter(Boolean)
+        .some((val) => val.toLowerCase().includes(search)),
+    );
+  }
+  return results;
 }
 
 async function getRequest(firebaseUid) {
@@ -142,12 +385,17 @@ async function getRequest(firebaseUid) {
     error.statusCode = 404;
     throw error;
   }
+  const attempts = await UniversityVerificationRequest.findAll({
+    where: { firebaseUid },
+    order: [['submittedAt', 'DESC']],
+  });
   const audits = await VerificationAudit.findAll({
     where: { firebaseUid },
     order: [['created_at', 'DESC']],
   });
   return {
-    request: publicRequest(user),
+    request: publicRequest(user, attempts[0] || null),
+    attempts: attempts.map((a) => publicRequest(user, a)),
     auditHistory: audits.map((audit) => ({
       id: audit.id,
       action: audit.action,
@@ -167,48 +415,69 @@ async function decideRequest(firebaseUid, actorUid, decision, reason) {
     throw error;
   }
 
-  const normalizedDecision = String(decision || '').toUpperCase();
-  if (!['APPROVED', 'REJECTED', 'REQUIRES_RESUBMISSION'].includes(normalizedDecision)) {
-    const error = new Error('Decision must be APPROVED, REJECTED or REQUIRES_RESUBMISSION.');
+  const rawDecision = String(decision || '').trim().toUpperCase();
+  const isApproved = rawDecision === 'APPROVED';
+  const isDeclined = ['DECLINED', 'REJECTED', 'REQUIRES_RESUBMISSION'].includes(rawDecision);
+  if (!isApproved && !isDeclined) {
+    const error = new Error('Decision must be APPROVED or DECLINED.');
     error.statusCode = 400;
     throw error;
   }
-  if (normalizedDecision !== 'APPROVED' && !String(reason || '').trim()) {
+  if (isDeclined && !String(reason || '').trim()) {
     const error = new Error('A rejection reason is required.');
     error.statusCode = 400;
     throw error;
   }
 
-  await user.update({
-    verificationStatus: normalizedDecision,
-    universityVerified: normalizedDecision === 'APPROVED',
-    reviewedAt: new Date(),
-    rejectionReason: normalizedDecision === 'APPROVED'
-      ? null
-      : String(reason).trim(),
+  const now = new Date();
+  const trimmedReason = isApproved ? null : String(reason).trim();
+
+  const latestRequest = await UniversityVerificationRequest.findOne({
+    where: { firebaseUid },
+    order: [['submittedAt', 'DESC']],
   });
+  if (latestRequest) {
+    await latestRequest.update({
+      status: isApproved ? 'approved' : 'declined',
+      rejectionReason: trimmedReason,
+      reviewedBy: actorUid,
+      reviewedAt: now,
+    });
+  }
+
+  await user.update({
+    verificationStatus: isApproved ? 'APPROVED' : 'REJECTED',
+    universityVerified: isApproved,
+    reviewedAt: now,
+    rejectionReason: trimmedReason,
+  });
+
   await VerificationAudit.create({
     firebaseUid,
-    action: normalizedDecision === 'APPROVED'
-      ? 'APPROVED'
-      : 'REJECTED',
+    action: isApproved ? 'APPROVED' : 'REJECTED',
     actorUid,
-    reason: normalizedDecision === 'APPROVED' ? null : String(reason).trim(),
+    reason: trimmedReason,
   });
-  return publicRequest(user);
+
+  return publicRequest(user, latestRequest);
 }
 
 async function getPrivateCard(firebaseUid) {
   await ensureSchema();
+  const latestRequest = await UniversityVerificationRequest.findOne({
+    where: { firebaseUid },
+    order: [['submittedAt', 'DESC']],
+  });
   const user = await User.findOne({ where: { firebaseUid } });
-  if (!user?.studentCardUrl) {
-    const error = new Error('Student card not found.');
+  const cardPath = latestRequest?.documentStoragePath || user?.studentCardUrl;
+  if (!cardPath) {
+    const error = new Error('Identification document not found.');
     error.statusCode = 404;
     throw error;
   }
-  const filePath = path.resolve(user.studentCardUrl);
+  const filePath = path.resolve(cardPath);
   if (!fs.existsSync(filePath)) {
-    const error = new Error('Student card file not found.');
+    const error = new Error('Identification document file not found.');
     error.statusCode = 404;
     throw error;
   }
@@ -217,7 +486,12 @@ async function getPrivateCard(firebaseUid) {
 
 module.exports = {
   VerificationAudit,
+  University,
+  UniversityVerificationRequest,
   publicRequest,
+  listUniversities,
+  createUniversity,
+  updateUniversity,
   getStatus,
   submitRequest,
   listRequests,
