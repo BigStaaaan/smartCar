@@ -33,7 +33,8 @@ class ActiveTripPage extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 22, 18, 32),
+                  padding: const EdgeInsets.fromLTRB(
+                      driverPageMargin, 24, driverPageMargin, 32),
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -46,10 +47,10 @@ class ActiveTripPage extends StatelessWidget {
                         const TripPill('En cours'),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: driverSectionGap),
                     Text('Trajet en cours',
                         style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: driverSectionGap),
                     DriverCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +69,7 @@ class ActiveTripPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: driverSectionGap),
                     DriverCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +91,7 @@ class ActiveTripPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: driverSectionGap),
                     FilledButton(
                       onPressed: onComplete == null
                           ? null

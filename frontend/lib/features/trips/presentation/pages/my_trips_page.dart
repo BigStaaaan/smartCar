@@ -114,8 +114,11 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(18, 22, 18, 14),
+                                padding: const EdgeInsets.fromLTRB(
+                                    driverPageMargin,
+                                    24,
+                                    driverPageMargin,
+                                    driverSectionGap),
                                 child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -184,7 +187,10 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
                                       return ListView.separated(
                                         key: ValueKey(_filter),
                                         padding: const EdgeInsets.fromLTRB(
-                                            18, 0, 18, 18),
+                                            driverPageMargin,
+                                            0,
+                                            driverPageMargin,
+                                            driverSectionGap),
                                         itemCount: visible.isEmpty
                                             ? 1
                                             : visible.length,
@@ -238,8 +244,11 @@ class _MyTripsPageState extends ConsumerState<MyTripsPage> {
                               ),
                               if (widget.onPublish != null)
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(18, 4, 18, 16),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      driverPageMargin,
+                                      4,
+                                      driverPageMargin,
+                                      driverSectionGap),
                                   child: TripPress(
                                     child: FilledButton(
                                       onPressed: () =>
@@ -266,11 +275,12 @@ class _TripsTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        constraints: const BoxConstraints(minHeight: 37),
+        constraints: const BoxConstraints(minHeight: 44),
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: driverHighlight),
+          color: driverSurface,
+          border: Border.all(color: driverOutline),
         ),
         child: Stack(children: [
           Positioned.fill(
