@@ -3,21 +3,26 @@ import { api } from '../../../services/api';
 import './verification.css';
 
 type Request = {
+  id: string | null;
   firebaseUid: string;
   fullName: string;
   email: string;
   accountType: string;
+  universityId: string | null;
   university: string;
+  universityEmail: string | null;
   studentId: string | null;
   faculty: string | null;
   department: string | null;
-  status: 'NOT_SUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'REQUIRES_RESUBMISSION';
+  status: 'not_submitted' | 'pending' | 'approved' | 'declined';
   submittedAt: string | null;
   rejectionReason: string | null;
 };
 
 export default function VerificationPage() {
-  const [status, setStatus] = useState('PENDING');
+  const [status, setStatus] = useState('pending');
+  const [accountTypeFilter, setAccountTypeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [requests, setRequests] = useState<Request[]>([]);
   const [allRequests, setAllRequests] = useState<Request[]>([]);
   const [selected, setSelected] = useState<Request | null>(null);
@@ -30,12 +35,16 @@ export default function VerificationPage() {
     setLoading(true);
     try {
       const response = await api.get('/verification/admin/requests', {
-        params: { status: 'ALL' },
+        params: {
+          status: 'ALL',
+          accountType: accountTypeFilter !== 'all' ? accountTypeFilter : undefined,
+          search: searchQuery.trim() || undefined,
+        },
       });
       const all = (response.data.requests as Request[]) ?? [];
       setAllRequests(all);
       const visible =
-        nextStatus === 'ALL'
+        nextStatus === 'all'
           ? all
           : all.filter((request) => request.status === nextStatus);
       setRequests(visible);
@@ -54,7 +63,7 @@ export default function VerificationPage() {
 
   useEffect(() => {
     loadRequests(status);
-  }, [status]);
+  }, [status, accountTypeFilter]);
 
   async function openRequest(request: Request) {
     setSelected(request);
@@ -129,22 +138,22 @@ export default function VerificationPage() {
       <div className="verification-summary" aria-label="Verification queue summary">
         <div>
           <span>Pending</span>
-          <strong>{allRequests.filter((item) => item.status === 'PENDING').length}</strong>
+          <strong>{allRequests.filter((item) => item.status === 'pending').length}</strong>
         </div>
         <div>
           <span>Approved</span>
-          <strong>{allRequests.filter((item) => item.status === 'APPROVED').length}</strong>
+          <strong>{allRequests.filter((item) => item.status === 'approved').length}</strong>
         </div>
         <div>
-          <span>Rejected</span>
-          <strong>{allRequests.filter((item) => item.status === 'REJECTED').length}</strong>
+          <span>Declined</span>
+          <strong>{allRequests.filter((item) => item.status === 'declined').length}</strong>
         </div>
       </div>
       {message && <p className="verification-message">{message}</p>}
       <div className="verification-grid">
         <div className="request-list">
           <div className="request-list-header">
-            <span>{status === 'ALL' ? 'All requests' : status === 'PENDING' ? 'Pending review' : status.toLowerCase()}</span>
+            <span>{status === 'all' ? 'All requests' : status === 'pending' ? 'Pending review' : status}</span>
             <strong>{loading ? '—' : requests.length}</strong>
           </div>
           {requests.map((request) => (
